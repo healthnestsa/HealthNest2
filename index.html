@@ -1,0 +1,3848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthNest - Advanced Symptom Checker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- Add Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #d1fae5;
+            --secondary: #10b981;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --text: #1f2937;
+            --light-text: #6b7280;
+            --bg-light: #f0fdf4;
+            --border: #dcfce7;
+            --shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.1), 0 2px 4px -1px rgba(5, 150, 105, 0.06);
+            --radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--primary);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--primary-light);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--primary-dark);
+        }
+
+        .user-info:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 3px solid var(--primary);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.1), 0 4px 6px -2px rgba(5, 150, 105, 0.05);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            font-size: 22px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 16px;
+            transition: all 0.3s;
+            background: #f8faf9;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+        }
+
+        .symptom-severity {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .severity-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8faf9;
+        }
+
+        .severity-btn:hover {
+            background: var(--primary-light);
+        }
+
+        .severity-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            transition: all 0.2s;
+            background: #f8faf9;
+        }
+
+        .checkbox-item:hover {
+            background: var(--primary-light);
+        }
+
+        .checkbox-item input {
+            width: auto;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-block {
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: rgba(5, 150, 105, 0.1);
+        }
+
+        .btn-success {
+            background: var(--secondary);
+        }
+
+        .btn-success:hover {
+            background: #0da271;
+        }
+
+        .btn-email {
+            background: #ea4335;
+        }
+
+        .btn-email:hover {
+            background: #d33426;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .results-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .result-card {
+            border-left: 4px solid var(--primary);
+        }
+
+        .severity-indicator {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .severity-low {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .severity-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .severity-high {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .recommendation {
+            background: var(--primary-light);
+            padding: 16px;
+            border-radius: var(--radius);
+            margin: 16px 0;
+            border-left: 3px solid var(--primary);
+        }
+
+        .recommendation h4 {
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .symptoms-list {
+            list-style-type: none;
+            margin: 16px 0;
+        }
+
+        .symptoms-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .symptoms-list li:last-child {
+            border-bottom: none;
+        }
+
+        .symptoms-list i {
+            color: var(--primary);
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--light-text);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .info-card h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .emergency-card {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-left: 4px solid var(--danger);
+        }
+
+        .emergency-list {
+            list-style-type: none;
+        }
+
+        .emergency-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .emergency-list i {
+            color: var(--danger);
+        }
+
+        .history-item {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8faf9;
+        }
+
+        .history-item:hover {
+            background: var(--primary-light);
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .history-symptoms {
+            font-size: 14px;
+            color: var(--light-text);
+            margin-top: 4px;
+        }
+
+        .ai-analysis {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            padding: 16px;
+            border-radius: var(--radius);
+            margin-top: 16px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .ai-icon {
+            background: var(--primary);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .ai-text {
+            font-style: italic;
+            line-height: 1.5;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--light-text);
+            font-size: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .tab-container {
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            border-bottom: 3px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .symptom-image {
+            width: 100%;
+            height: 180px;
+            border-radius: var(--radius);
+            object-fit: cover;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .symptom-category {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .symptom-category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            background: #f8faf9;
+        }
+
+        .symptom-category-item:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        .symptom-category-item.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .symptom-icon {
+            font-size: 24px;
+            color: var(--primary);
+        }
+
+        .symptom-category-item.active .symptom-icon {
+            color: white;
+        }
+
+        .condition-image {
+            width: 100%;
+            height: 160px;
+            border-radius: var(--radius);
+            object-fit: cover;
+            margin: 10px 0;
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .validation-error {
+            border-color: var(--danger) !important;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: var(--shadow);
+            max-height: 90vh;
+            overflow-y: auto;
+            border-left: 4px solid var(--primary);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--light-text);
+        }
+
+        .save-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .save-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            background: #f8faf9;
+        }
+
+        .save-option:hover {
+            background: var(--primary-light);
+        }
+
+        .save-option.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .save-icon {
+            font-size: 24px;
+        }
+
+        .reports-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+
+        .report-item {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8faf9;
+        }
+
+        .report-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .report-date {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .report-symptoms {
+            font-size: 14px;
+            color: var(--light-text);
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .report-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        .user-profile-section {
+            margin-bottom: 20px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--primary-light);
+        }
+
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--primary-dark);
+        }
+
+        .profile-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .profile-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-label {
+            font-size: 12px;
+            color: var(--light-text);
+        }
+
+        .profile-value {
+            font-weight: 500;
+            color: var(--primary-dark);
+        }
+
+        .email-section {
+            margin-top: 20px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: #f0fdf4;
+        }
+
+        .email-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: #ea4335;
+        }
+
+        .email-status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            display: none;
+        }
+
+        .email-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .email-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .health-records-section {
+            margin-top: 20px;
+        }
+
+        .records-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .record-tab {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .record-tab.active {
+            border-bottom: 3px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .record-content {
+            display: none;
+        }
+
+        .record-content.active {
+            display: block;
+        }
+
+        .record-item {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8faf9;
+        }
+
+        .record-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .record-date {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .record-details {
+            font-size: 14px;
+            color: var(--light-text);
+        }
+
+        .add-record-btn {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .medical-database-section {
+            margin-top: 20px;
+        }
+
+        .search-box {
+            margin-bottom: 16px;
+        }
+
+        .database-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .database-category {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            background: #f8faf9;
+        }
+
+        .database-category:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        .database-category.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .database-icon {
+            font-size: 24px;
+        }
+
+        .database-content {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            background: #f8faf9;
+        }
+
+        .condition-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .condition-item:last-child {
+            border-bottom: none;
+        }
+
+        .condition-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .condition-symptoms {
+            font-size: 14px;
+            color: var(--light-text);
+            margin-top: 4px;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus styles for better accessibility */
+        button:focus, input:focus, select:focus, textarea:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        /* Print styles */
+        @media print {
+            .sidebar, .btn, header, footer {
+                display: none !important;
+            }
+            
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid var(--border);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .results-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .symptom-category {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .save-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .profile-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .database-categories {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+
+        /* Firebase Auth Styles */
+        .auth-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--primary-light);
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .btn-google {
+            background: #DB4437;
+        }
+
+        .btn-google:hover {
+            background: #c23321;
+        }
+
+        .auth-status {
+            padding: 10px;
+            border-radius: var(--radius);
+            margin: 10px 0;
+            font-size: 14px;
+            display: none;
+        }
+
+        .auth-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .auth-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <h1>HealthNest Symptom Analyzer</h1>
+            </div>
+            <div class="user-info" id="user-profile-btn" aria-label="User profile">
+                <i class="fas fa-user-circle"></i>
+                <span id="user-name">Guest User</span>
+            </div>
+        </header>
+        
+        <div class="app-container">
+            <div class="main-content">
+                <!-- User Profile Section -->
+                <div class="card" id="user-profile-card">
+                    <h2 class="card-title"><i class="fas fa-user-md"></i> User Profile</h2>
+                    
+                    <!-- Firebase Authentication Status -->
+                    <div class="auth-section" id="auth-section">
+                        <h4><i class="fas fa-cloud"></i> Cloud Sync Status</h4>
+                        <div class="auth-status" id="auth-status">
+                            <!-- Auth status messages will appear here -->
+                        </div>
+                        <div class="auth-buttons" id="auth-buttons">
+                            <!-- Auth buttons will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="user-profile-section">
+                        <div class="profile-header">
+                            <div class="profile-name" id="profile-full-name">Guest User</div>
+                            <button class="btn btn-outline" id="edit-profile-btn">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </button>
+                        </div>
+                        <div class="profile-details">
+                            <div class="profile-detail">
+                                <span class="profile-label">Age</span>
+                                <span class="profile-value" id="profile-age">Not set</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="profile-label">Gender</span>
+                                <span class="profile-value" id="profile-gender">Not set</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="profile-label">Phone</span>
+                                <span class="profile-value" id="profile-phone">Not set</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="profile-label">Email</span>
+                                <span class="profile-value" id="profile-email">Not set</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Personal Health Records Section -->
+                    <div class="health-records-section">
+                        <h3 class="card-title"><i class="fas fa-file-medical"></i> Personal Health Records</h3>
+                        
+                        <div class="records-tabs">
+                            <div class="record-tab active" data-record-tab="vaccinations">Vaccinations</div>
+                            <div class="record-tab" data-record-tab="medications">Medications</div>
+                            <div class="record-tab" data-record-tab="allergies">Allergies</div>
+                            <div class="record-tab" data-record-tab="conditions">Conditions</div>
+                        </div>
+                        
+                        <div class="record-content active" id="vaccinations-tab">
+                            <div id="vaccinations-list">
+                                <!-- Vaccination records will be populated here -->
+                            </div>
+                            <button class="btn btn-outline add-record-btn" data-record-type="vaccination">
+                                <i class="fas fa-plus"></i> Add Vaccination Record
+                            </button>
+                        </div>
+                        
+                        <div class="record-content" id="medications-tab">
+                            <div id="medications-list">
+                                <!-- Medication records will be populated here -->
+                            </div>
+                            <button class="btn btn-outline add-record-btn" data-record-type="medication">
+                                <i class="fas fa-plus"></i> Add Medication
+                            </button>
+                        </div>
+                        
+                        <div class="record-content" id="allergies-tab">
+                            <div id="allergies-list">
+                                <!-- Allergy records will be populated here -->
+                            </div>
+                            <button class="btn btn-outline add-record-btn" data-record-type="allergy">
+                                <i class="fas fa-plus"></i> Add Allergy
+                            </button>
+                        </div>
+                        
+                        <div class="record-content" id="conditions-tab">
+                            <div id="conditions-list">
+                                <!-- Medical conditions will be populated here -->
+                            </div>
+                            <button class="btn btn-outline add-record-btn" data-record-type="condition">
+                                <i class="fas fa-plus"></i> Add Medical Condition
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Enhanced Medical Database Section -->
+                    <div class="medical-database-section">
+                        <h3 class="card-title"><i class="fas fa-database"></i> Medical Database</h3>
+                        
+                        <div class="search-box">
+                            <input type="text" id="medical-search" placeholder="Search conditions, symptoms, medications...">
+                        </div>
+                        
+                        <div class="database-categories">
+                            <div class="database-category active" data-category="conditions">
+                                <i class="fas fa-disease database-icon"></i>
+                                <span>Conditions</span>
+                            </div>
+                            <div class="database-category" data-category="symptoms">
+                                <i class="fas fa-thermometer database-icon"></i>
+                                <span>Symptoms</span>
+                            </div>
+                            <div class="database-category" data-category="medications">
+                                <i class="fas fa-pills database-icon"></i>
+                                <span>Medications</span>
+                            </div>
+                            <div class="database-category" data-category="procedures">
+                                <i class="fas fa-procedures database-icon"></i>
+                                <span>Procedures</span>
+                            </div>
+                        </div>
+                        
+                        <div class="database-content" id="database-results">
+                            <!-- Database content will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="email-section">
+                        <div class="email-header">
+                            <i class="fas fa-envelope"></i>
+                            <h3>Email Health Report</h3>
+                        </div>
+                        <p>Send your health report directly to your email address:</p>
+                        <div class="form-group">
+                            <input type="email" id="email-address" placeholder="your.email@example.com">
+                            <div class="error-message" id="email-error">Please enter a valid email address</div>
+                        </div>
+                        <button class="btn btn-email btn-block" id="send-email-btn">
+                            <i class="fas fa-paper-plane"></i> Send Health Report via Email
+                        </button>
+                        <div class="email-status" id="email-status"></div>
+                    </div>
+                </div>
+                
+                <!-- Symptom Input Form -->
+                <div class="card" id="symptom-form">
+                    <h2 class="card-title"><i class="fas fa-clipboard-list"></i> Symptom Assessment</h2>
+                    
+                    <div class="tab-container">
+                        <div class="tabs">
+                            <div class="tab active" data-tab="basic">Basic Info</div>
+                            <div class="tab" data-tab="symptoms">Symptoms</div>
+                            <div class="tab" data-tab="lifestyle">Lifestyle</div>
+                        </div>
+                        
+                        <div class="tab-content active" id="basic-tab">
+                            <div class="form-group">
+                                <label for="age">Age</label>
+                                <input type="number" id="age" min="1" max="120" placeholder="Enter your age">
+                                <div class="error-message" id="age-error">Please enter a valid age between 1 and 120</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="gender">Gender</label>
+                                <select id="gender">
+                                    <option value="">Select your gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other / Prefer not to say</option>
+                                </select>
+                                <div class="error-message" id="gender-error">Please select your gender</div>
+                            </div>
+                            
+                            <button class="btn next-tab" data-next="symptoms">
+                                Next: Symptoms <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="tab-content" id="symptoms-tab">
+                            <div class="form-group">
+                                <label>Symptom Categories</label>
+                                <div class="symptom-category">
+                                    <div class="symptom-category-item" data-category="respiratory">
+                                        <i class="fas fa-lungs symptom-icon"></i>
+                                        <span>Respiratory</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="digestive">
+                                        <i class="fas fa-stomach symptom-icon"></i>
+                                        <span>Digestive</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="neurological">
+                                        <i class="fas fa-brain symptom-icon"></i>
+                                        <span>Neurological</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="muscular">
+                                        <i class="fas fa-bone symptom-icon"></i>
+                                        <span>Muscular</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="general">
+                                        <i class="fas fa-temperature-high symptom-icon"></i>
+                                        <span>General</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="cardiovascular">
+                                        <i class="fas fa-heartbeat symptom-icon"></i>
+                                        <span>Cardiovascular</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="urinary">
+                                        <i class="fas fa-tint symptom-icon"></i>
+                                        <span>Urinary</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="skin">
+                                        <i class="fas fa-allergies symptom-icon"></i>
+                                        <span>Skin</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="eye">
+                                        <i class="fas fa-eye symptom-icon"></i>
+                                        <span>Eye</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="ear">
+                                        <i class="fas fa-ear symptom-icon"></i>
+                                        <span>Ear</span>
+                                    </div>
+                                    <div class="symptom-category-item" data-category="mental">
+                                        <i class="fas fa-head-side-virus symptom-icon"></i>
+                                        <span>Mental Health</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Primary Symptoms</label>
+                                <div class="checkbox-group" id="symptoms-checkbox-group">
+                                    <!-- Symptoms will be populated by JavaScript -->
+                                </div>
+                                <div class="error-message" id="symptoms-error">Please select at least one symptom</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="symptom-duration">How long have you had these symptoms?</label>
+                                <select id="symptom-duration">
+                                    <option value="">Select duration</option>
+                                    <option value="less-than-day">Less than a day</option>
+                                    <option value="1-3-days">1-3 days</option>
+                                    <option value="4-7-days">4-7 days</option>
+                                    <option value="1-2-weeks">1-2 weeks</option>
+                                    <option value="more-than-2-weeks">More than 2 weeks</option>
+                                </select>
+                                <div class="error-message" id="duration-error">Please select symptom duration</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="symptom-severity">Overall symptom severity</label>
+                                <div class="symptom-severity">
+                                    <div class="severity-btn" data-severity="mild">Mild</div>
+                                    <div class="severity-btn" data-severity="moderate">Moderate</div>
+                                    <div class="severity-btn" data-severity="severe">Severe</div>
+                                </div>
+                                <div class="error-message" id="severity-error">Please select symptom severity</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="symptom-description">Additional details about your symptoms</label>
+                                <textarea id="symptom-description" rows="4" placeholder="Describe your symptoms in detail, including when they started, what makes them better or worse, and any other relevant information"></textarea>
+                            </div>
+                            
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="form-progress" style="width: 33%"></div>
+                                </div>
+                                <div class="progress-text">
+                                    <span>Step 2 of 3</span>
+                                    <span>33% Complete</span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-outline prev-tab" data-prev="basic">
+                                    <i class="fas fa-arrow-left"></i> Previous
+                                </button>
+                                <button class="btn next-tab" data-next="lifestyle" style="flex: 1;">
+                                    Next: Lifestyle <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="lifestyle-tab">
+                            <div class="form-group">
+                                <label for="activity-level">Physical Activity Level</label>
+                                <select id="activity-level">
+                                    <option value="">Select activity level</option>
+                                    <option value="sedentary">Sedentary (little to no exercise)</option>
+                                    <option value="light">Light (light exercise 1-3 days/week)</option>
+                                    <option value="moderate">Moderate (moderate exercise 3-5 days/week)</option>
+                                    <option value="active">Active (intense exercise 6-7 days/week)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="sleep">Average Hours of Sleep Per Night</label>
+                                <input type="number" id="sleep" min="0" max="24" placeholder="Enter hours">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="stress">Stress Level</label>
+                                <select id="stress">
+                                    <option value="">Select stress level</option>
+                                    <option value="low">Low</option>
+                                    <option value="moderate">Moderate</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="diet">Diet Quality</label>
+                                <select id="diet">
+                                    <option value="">Select diet quality</option>
+                                    <option value="poor">Poor (mostly processed foods)</option>
+                                    <option value="average">Average (mix of healthy and processed)</option>
+                                    <option value="good">Good (mostly whole foods)</option>
+                                    <option value="excellent">Excellent (balanced, nutrient-rich)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="form-progress-final" style="width: 100%"></div>
+                                </div>
+                                <div class="progress-text">
+                                    <span>Step 3 of 3</span>
+                                    <span>100% Complete</span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-outline prev-tab" data-prev="symptoms">
+                                    <i class="fas fa-arrow-left"></i> Previous
+                                </button>
+                                <button class="btn btn-success btn-block" id="analyze-btn">
+                                    <i class="fas fa-search"></i> Analyze Symptoms
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading Spinner -->
+                    <div class="loading-spinner" id="analyzing-spinner">
+                        <div class="spinner"></div>
+                        <p>Analyzing your symptoms...</p>
+                    </div>
+                </div>
+                
+                <!-- Results Section -->
+                <div class="card result-card hidden" id="results">
+                    <h2 class="card-title"><i class="fas fa-diagnoses"></i> Assessment Results</h2>
+                    
+                    <div class="severity-indicator" id="severity-indicator">Moderate Severity</div>
+                    
+                    <div class="results-container">
+                        <div>
+                            <h3>Possible Conditions</h3>
+                            <ul class="symptoms-list" id="possible-conditions">
+                                <!-- Will be populated by JavaScript -->
+                            </ul>
+                            
+                            <div class="recommendation">
+                                <h4><i class="fas fa-lightbulb"></i> Recommended Actions</h4>
+                                <div id="recommendations">
+                                    <!-- Will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3>AI Analysis</h3>
+                            <div class="ai-analysis">
+                                <div class="ai-header">
+                                    <div class="ai-icon">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <h4>HealthNest Analysis</h4>
+                                </div>
+                                <div class="ai-text" id="ai-analysis-text">
+                                    <!-- Will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            
+                            <h4 style="margin-top: 20px;">When to Seek Immediate Medical Attention</h4>
+                            <ul class="symptoms-list" id="warning-signs">
+                                <li><i class="fas fa-exclamation-circle"></i> Difficulty breathing or shortness of breath</li>
+                                <li><i class="fas fa-exclamation-circle"></i> Chest pain or pressure</li>
+                                <li><i class="fas fa-exclamation-circle"></i> Sudden dizziness or confusion</li>
+                                <li><i class="fas fa-exclamation-circle"></i> Severe, persistent pain</li>
+                                <li><i class="fas fa-exclamation-circle"></i> High fever that doesn't respond to treatment</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn btn-outline" id="back-btn">
+                            <i class="fas fa-arrow-left"></i> Back to Symptom Checker
+                        </button>
+                        <button class="btn" id="save-report-btn">
+                            <i class="fas fa-download"></i> Save Health Report
+                        </button>
+                        <button class="btn btn-email" id="email-results-btn">
+                            <i class="fas fa-envelope"></i> Email Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="info-card emergency-card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Emergency Signs</h3>
+                    <ul class="emergency-list">
+                        <li><i class="fas fa-chevron-right"></i> Chest pain or pressure</li>
+                        <li><i class="fas fa-chevron-right"></i> Difficulty breathing</li>
+                        <li><i class="fas fa-chevron-right"></i> Severe bleeding</li>
+                        <li><i class="fas fa-chevron-right"></i> Sudden confusion</li>
+                        <li><i class="fas fa-chevron-right"></i> Unconsciousness</li>
+                    </ul>
+                    <button class="btn btn-block" style="margin-top: 15px; background: var(--danger);">
+                        <i class="fas fa-phone-alt"></i> Call Emergency Services
+                    </button>
+                </div>
+                
+                <div class="info-card">
+                    <h3><i class="fas fa-heartbeat"></i> Health Tips</h3>
+                    <ul class="symptoms-list">
+                        <li><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Stay hydrated throughout the day</li>
+                        <li><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Get 7-9 hours of quality sleep</li>
+                        <li><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Exercise for 30 minutes daily</li>
+                        <li><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Eat a balanced diet with fruits and vegetables</li>
+                        <li><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Manage stress through meditation or hobbies</li>
+                    </ul>
+                </div>
+                
+                <!-- Recent Health Reports Section -->
+                <div class="info-card">
+                    <h3><i class="fas fa-history"></i> Recent Reports</h3>
+                    <div id="recent-reports-list">
+                        <!-- Recent reports will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Profile Modal -->
+        <div class="modal" id="user-profile-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">User Profile</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-name">Full Name</label>
+                    <input type="text" id="profile-name" placeholder="Enter your full name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-email">Email Address</label>
+                    <input type="email" id="profile-email" placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-phone-input">Phone Number</label>
+                    <input type="tel" id="profile-phone-input" placeholder="+1234567890">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-age-input">Age</label>
+                    <input type="number" id="profile-age-input" min="1" max="120" placeholder="Enter your age">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-gender-input">Gender</label>
+                    <select id="profile-gender-input">
+                        <option value="">Select your gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other / Prefer not to say</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-outline" id="cancel-profile">Cancel</button>
+                    <button class="btn" id="save-profile">Save Profile</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Health Record Modal -->
+        <div class="modal" id="health-record-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="record-modal-title">Add Health Record</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                
+                <div id="record-form-content">
+                    <!-- Form content will be populated based on record type -->
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-outline" id="cancel-record">Cancel</button>
+                    <button class="btn" id="save-record">Save Record</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Save Report Modal -->
+        <div class="modal" id="save-report-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Save Health Report</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <p>Choose how you would like to save your health report:</p>
+                
+                <div class="save-options">
+                    <div class="save-option" data-method="local">
+                        <i class="fas fa-desktop save-icon"></i>
+                        <span>Save to Browser</span>
+                        <small>Stores report in this browser only</small>
+                    </div>
+                    <div class="save-option" data-method="download">
+                        <i class="fas fa-file-pdf save-icon"></i>
+                        <span>Download PDF</span>
+                        <small>Download as PDF file</small>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-outline" id="cancel-save">Cancel</button>
+                    <button class="btn" id="confirm-save" disabled>Save Report</button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>HealthNest Symptom Analyzer &copy; 2023 | For informational purposes only</p>
+            <p>This tool does not provide medical advice. Always consult a healthcare professional for proper diagnosis and treatment.</p>
+        </footer>
+    </div>
+
+    <script>
+        // ==================== FIREBASE CONFIGURATION ====================
+        // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG FROM STEP 1.2
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-rYG-E9835mTFGuer4_LonwT1W47mJ6Y",
+            authDomain: "healthnest-86285.firebaseapp.com",
+            projectId: "healthnest-86285",
+            storageBucket: "healthnest-86285.firebasestorage.app",
+            messagingSenderId: "435223949966",
+            appId: "1:435223949966:web:bd152eaf544af4db5c0fdf"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize Firebase services
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        console.log('✅ Firebase initialized successfully');
+
+        // Advanced EmailJS Configuration - REPLACE WITH YOUR CREDENTIALS!
+        const EMAILJS_CONFIG = {
+            serviceId: 'service_m50zzui',      // ← REPLACE THIS
+            templateId: 'template_lg681lm', // ← USE THIS EXACT NAME
+            publicKey: 'V1KaMVUIEYE37JjBg'       // ← REPLACE THIS
+        };
+
+        // Initialize EmailJS
+        emailjs.init(EMAILJS_CONFIG.publicKey);
+        console.log('✅ EmailJS initialized');
+
+        // Enhanced Medical Database with Expanded Symptoms and More Accurate Condition Matching
+        const medicalDatabase = {
+            conditions: [
+                {
+                    id: 'common-cold',
+                    name: 'Common Cold',
+                    category: 'respiratory',
+                    symptoms: ['cough', 'sore-throat', 'runny-nose', 'sneezing', 'fatigue', 'body-aches'],
+                    keySymptoms: ['runny-nose', 'sneezing'],
+                    description: 'A viral infection of the upper respiratory tract',
+                    severity: 'low',
+                    treatments: ['Rest', 'Hydration', 'Over-the-counter cold medicines'],
+                    prevention: ['Hand washing', 'Avoid close contact with sick individuals']
+                },
+                {
+                    id: 'influenza',
+                    name: 'Influenza (Flu)',
+                    category: 'respiratory',
+                    symptoms: ['fever', 'cough', 'sore-throat', 'runny-nose', 'body-aches', 'headache', 'fatigue', 'chills'],
+                    keySymptoms: ['fever', 'body-aches', 'fatigue'],
+                    description: 'A contagious respiratory illness caused by influenza viruses',
+                    severity: 'medium',
+                    treatments: ['Antiviral medications', 'Rest', 'Hydration'],
+                    prevention: ['Annual flu vaccine', 'Hand hygiene']
+                },
+                {
+                    id: 'covid-19',
+                    name: 'COVID-19',
+                    category: 'respiratory',
+                    symptoms: ['fever', 'cough', 'shortness-breath', 'fatigue', 'body-aches', 'headache', 'loss-of-taste', 'loss-of-smell'],
+                    keySymptoms: ['loss-of-taste', 'loss-of-smell', 'shortness-breath'],
+                    description: 'Coronavirus disease 2019 caused by SARS-CoV-2 virus',
+                    severity: 'medium',
+                    treatments: ['Symptomatic treatment', 'Antiviral medications in severe cases'],
+                    prevention: ['Vaccination', 'Mask wearing', 'Social distancing']
+                },
+                {
+                    id: 'migraine',
+                    name: 'Migraine',
+                    category: 'neurological',
+                    symptoms: ['headache', 'nausea', 'sensitivity-to-light', 'sensitivity-to-sound', 'dizziness', 'vision-changes'],
+                    keySymptoms: ['headache', 'sensitivity-to-light', 'sensitivity-to-sound'],
+                    description: 'A neurological condition characterized by intense headaches',
+                    severity: 'medium',
+                    treatments: ['Pain relievers', 'Triptans', 'Preventive medications'],
+                    prevention: ['Identify and avoid triggers', 'Stress management']
+                },
+                {
+                    id: 'gastroenteritis',
+                    name: 'Gastroenteritis (Stomach Flu)',
+                    category: 'digestive',
+                    symptoms: ['nausea', 'vomiting', 'diarrhea', 'stomach-cramps', 'fever', 'abdominal-pain'],
+                    keySymptoms: ['nausea', 'vomiting', 'diarrhea'],
+                    description: 'Inflammation of the stomach and intestines',
+                    severity: 'low',
+                    treatments: ['Hydration', 'BRAT diet', 'Rest'],
+                    prevention: ['Proper food handling', 'Hand washing']
+                },
+                {
+                    id: 'bronchitis',
+                    name: 'Bronchitis',
+                    category: 'respiratory',
+                    symptoms: ['cough', 'shortness-breath', 'chest-discomfort', 'fatigue', 'fever', 'wheezing'],
+                    keySymptoms: ['cough', 'shortness-breath', 'chest-discomfort'],
+                    description: 'Inflammation of the bronchial tubes',
+                    severity: 'medium',
+                    treatments: ['Rest', 'Hydration', 'Bronchodilators if needed'],
+                    prevention: ['Avoid smoking', 'Avoid irritants']
+                },
+                {
+                    id: 'pneumonia',
+                    name: 'Pneumonia',
+                    category: 'respiratory',
+                    symptoms: ['fever', 'cough', 'shortness-breath', 'chest-pain', 'fatigue', 'chills', 'sweating'],
+                    keySymptoms: ['fever', 'cough', 'shortness-breath', 'chest-pain'],
+                    description: 'Infection that inflames air sacs in one or both lungs',
+                    severity: 'high',
+                    treatments: ['Antibiotics', 'Rest', 'Hospitalization if severe'],
+                    prevention: ['Vaccination', 'Good hygiene']
+                },
+                {
+                    id: 'uti',
+                    name: 'Urinary Tract Infection',
+                    category: 'urinary',
+                    symptoms: ['frequent-urination', 'burning-urination', 'pelvic-pain', 'cloudy-urine', 'urgency-urination'],
+                    keySymptoms: ['frequent-urination', 'burning-urination', 'pelvic-pain'],
+                    description: 'Infection in any part of the urinary system',
+                    severity: 'medium',
+                    treatments: ['Antibiotics', 'Increased fluid intake'],
+                    prevention: ['Proper hygiene', 'Adequate hydration']
+                },
+                {
+                    id: 'hypertension',
+                    name: 'Hypertension',
+                    category: 'cardiovascular',
+                    symptoms: ['headache', 'dizziness', 'chest-pain', 'shortness-breath', 'palpitations'],
+                    keySymptoms: ['headache', 'dizziness', 'chest-pain'],
+                    description: 'High blood pressure',
+                    severity: 'medium',
+                    treatments: ['Lifestyle changes', 'Medications', 'Regular monitoring'],
+                    prevention: ['Healthy diet', 'Regular exercise', 'Stress management']
+                },
+                {
+                    id: 'anxiety',
+                    name: 'Anxiety Disorder',
+                    category: 'mental',
+                    symptoms: ['anxiety', 'restlessness', 'irritability', 'sleep-problems', 'fatigue', 'concentration-problems'],
+                    keySymptoms: ['anxiety', 'restlessness', 'sleep-problems'],
+                    description: 'Mental health disorder characterized by feelings of worry, anxiety, or fear',
+                    severity: 'medium',
+                    treatments: ['Therapy', 'Medication', 'Lifestyle changes', 'Stress management'],
+                    prevention: ['Stress reduction', 'Regular exercise', 'Healthy sleep habits']
+                },
+                {
+                    id: 'sinusitis',
+                    name: 'Sinusitis',
+                    category: 'respiratory',
+                    symptoms: ['facial-pain', 'headache', 'nasal-congestion', 'runny-nose', 'loss-of-smell', 'cough'],
+                    keySymptoms: ['facial-pain', 'nasal-congestion', 'headache'],
+                    description: 'Inflammation of the sinuses',
+                    severity: 'low',
+                    treatments: ['Nasal irrigation', 'Decongestants', 'Antibiotics if bacterial'],
+                    prevention: ['Avoid allergens', 'Stay hydrated']
+                },
+                {
+                    id: 'asthma',
+                    name: 'Asthma',
+                    category: 'respiratory',
+                    symptoms: ['wheezing', 'shortness-breath', 'chest-tightness', 'cough'],
+                    keySymptoms: ['wheezing', 'shortness-breath', 'chest-tightness'],
+                    description: 'Chronic condition affecting the airways in the lungs',
+                    severity: 'medium',
+                    treatments: ['Bronchodilators', 'Inhaled corticosteroids', 'Avoiding triggers'],
+                    prevention: ['Identify and avoid triggers', 'Regular medication use']
+                },
+                {
+                    id: 'allergic-rhinitis',
+                    name: 'Allergic Rhinitis',
+                    category: 'respiratory',
+                    symptoms: ['sneezing', 'runny-nose', 'itchy-eyes', 'nasal-congestion'],
+                    keySymptoms: ['sneezing', 'runny-nose', 'itchy-eyes'],
+                    description: 'Allergic reaction to airborne substances',
+                    severity: 'low',
+                    treatments: ['Antihistamines', 'Nasal corticosteroids', 'Allergen avoidance'],
+                    prevention: ['Avoid allergens', 'Keep windows closed during high pollen seasons']
+                },
+                {
+                    id: 'tension-headache',
+                    name: 'Tension Headache',
+                    category: 'neurological',
+                    symptoms: ['headache', 'pressure-around-forehead', 'tenderness-in-scalp', 'neck-pain'],
+                    keySymptoms: ['headache', 'pressure-around-forehead', 'neck-pain'],
+                    description: 'Common headache characterized by pressure or tightness',
+                    severity: 'low',
+                    treatments: ['Over-the-counter pain relievers', 'Stress management', 'Relaxation techniques'],
+                    prevention: ['Manage stress', 'Regular exercise', 'Good posture']
+                },
+                {
+                    id: 'gastroesophageal-reflux',
+                    name: 'GERD (Acid Reflux)',
+                    category: 'digestive',
+                    symptoms: ['heartburn', 'regurgitation', 'chest-pain', 'difficulty-swallowing'],
+                    keySymptoms: ['heartburn', 'regurgitation', 'chest-pain'],
+                    description: 'Chronic digestive disease where stomach acid flows back into the esophagus',
+                    severity: 'medium',
+                    treatments: ['Antacids', 'Lifestyle changes', 'Medications to reduce acid production'],
+                    prevention: ['Avoid trigger foods', 'Eat smaller meals', 'Avoid lying down after eating']
+                },
+                {
+                    id: 'depression',
+                    name: 'Depression',
+                    category: 'mental',
+                    symptoms: ['depression', 'loss-interest', 'fatigue', 'sleep-problems', 'appetite-changes', 'concentration-problems'],
+                    keySymptoms: ['depression', 'loss-interest', 'fatigue'],
+                    description: 'Mood disorder causing persistent feelings of sadness and loss of interest',
+                    severity: 'medium',
+                    treatments: ['Therapy', 'Medication', 'Lifestyle changes', 'Support groups'],
+                    prevention: ['Regular exercise', 'Healthy sleep habits', 'Social connection']
+                }
+            ],
+            symptoms: [
+                // General Symptoms
+                { id: 'fever', name: 'Fever', category: 'general' },
+                { id: 'fatigue', name: 'Fatigue', category: 'general' },
+                { id: 'weakness', name: 'Weakness', category: 'general' },
+                { id: 'chills', name: 'Chills', category: 'general' },
+                { id: 'night-sweats', name: 'Night Sweats', category: 'general' },
+                { id: 'weight-loss', name: 'Unexplained Weight Loss', category: 'general' },
+                { id: 'weight-gain', name: 'Unexplained Weight Gain', category: 'general' },
+                { id: 'appetite-loss', name: 'Loss of Appetite', category: 'general' },
+                { id: 'swollen-glands', name: 'Swollen Glands', category: 'general' },
+                
+                // Respiratory Symptoms
+                { id: 'cough', name: 'Cough', category: 'respiratory' },
+                { id: 'shortness-breath', name: 'Shortness of Breath', category: 'respiratory' },
+                { id: 'sore-throat', name: 'Sore Throat', category: 'respiratory' },
+                { id: 'runny-nose', name: 'Runny Nose', category: 'respiratory' },
+                { id: 'nasal-congestion', name: 'Nasal Congestion', category: 'respiratory' },
+                { id: 'sneezing', name: 'Sneezing', category: 'respiratory' },
+                { id: 'chest-pain', name: 'Chest Pain', category: 'respiratory' },
+                { id: 'wheezing', name: 'Wheezing', category: 'respiratory' },
+                { id: 'chest-tightness', name: 'Chest Tightness', category: 'respiratory' },
+                { id: 'difficulty-breathing', name: 'Difficulty Breathing', category: 'respiratory' },
+                
+                // Digestive Symptoms
+                { id: 'nausea', name: 'Nausea', category: 'digestive' },
+                { id: 'vomiting', name: 'Vomiting', category: 'digestive' },
+                { id: 'diarrhea', name: 'Diarrhea', category: 'digestive' },
+                { id: 'constipation', name: 'Constipation', category: 'digestive' },
+                { id: 'abdominal-pain', name: 'Abdominal Pain', category: 'digestive' },
+                { id: 'stomach-cramps', name: 'Stomach Cramps', category: 'digestive' },
+                { id: 'bloating', name: 'Bloating', category: 'digestive' },
+                { id: 'gas', name: 'Gas', category: 'digestive' },
+                { id: 'heartburn', name: 'Heartburn', category: 'digestive' },
+                { id: 'indigestion', name: 'Indigestion', category: 'digestive' },
+                { id: 'loss-of-appetite', name: 'Loss of Appetite', category: 'digestive' },
+                { id: 'bloody-stool', name: 'Bloody Stool', category: 'digestive' },
+                { id: 'regurgitation', name: 'Regurgitation', category: 'digestive' },
+                { id: 'difficulty-swallowing', name: 'Difficulty Swallowing', category: 'digestive' },
+                
+                // Neurological Symptoms
+                { id: 'headache', name: 'Headache', category: 'neurological' },
+                { id: 'dizziness', name: 'Dizziness', category: 'neurological' },
+                { id: 'vertigo', name: 'Vertigo', category: 'neurological' },
+                { id: 'confusion', name: 'Confusion', category: 'neurological' },
+                { id: 'memory-problems', name: 'Memory Problems', category: 'neurological' },
+                { id: 'loss-of-balance', name: 'Loss of Balance', category: 'neurological' },
+                { id: 'numbness', name: 'Numbness', category: 'neurological' },
+                { id: 'tingling', name: 'Tingling', category: 'neurological' },
+                { id: 'seizures', name: 'Seizures', category: 'neurological' },
+                { id: 'tremors', name: 'Tremors', category: 'neurological' },
+                { id: 'loss-of-taste', name: 'Loss of Taste', category: 'neurological' },
+                { id: 'loss-of-smell', name: 'Loss of Smell', category: 'neurological' },
+                { id: 'sensitivity-to-light', name: 'Sensitivity to Light', category: 'neurological' },
+                { id: 'sensitivity-to-sound', name: 'Sensitivity to Sound', category: 'neurological' },
+                { id: 'vision-changes', name: 'Vision Changes', category: 'neurological' },
+                { id: 'pressure-around-forehead', name: 'Pressure Around Forehead', category: 'neurological' },
+                { id: 'tenderness-in-scalp', name: 'Tenderness in Scalp', category: 'neurological' },
+                
+                // Muscular Symptoms
+                { id: 'body-aches', name: 'Body Aches', category: 'muscular' },
+                { id: 'joint-pain', name: 'Joint Pain', category: 'muscular' },
+                { id: 'muscle-pain', name: 'Muscle Pain', category: 'muscular' },
+                { id: 'muscle-weakness', name: 'Muscle Weakness', category: 'muscular' },
+                { id: 'muscle-spasms', name: 'Muscle Spasms', category: 'muscular' },
+                { id: 'back-pain', name: 'Back Pain', category: 'muscular' },
+                { id: 'neck-pain', name: 'Neck Pain', category: 'muscular' },
+                { id: 'stiffness', name: 'Stiffness', category: 'muscular' },
+                { id: 'swelling-joints', name: 'Swelling in Joints', category: 'muscular' },
+                
+                // Cardiovascular Symptoms
+                { id: 'chest-discomfort', name: 'Chest Discomfort', category: 'cardiovascular' },
+                { id: 'palpitations', name: 'Palpitations', category: 'cardiovascular' },
+                { id: 'rapid-heartbeat', name: 'Rapid Heartbeat', category: 'cardiovascular' },
+                { id: 'slow-heartbeat', name: 'Slow Heartbeat', category: 'cardiovascular' },
+                { id: 'irregular-heartbeat', name: 'Irregular Heartbeat', category: 'cardiovascular' },
+                { id: 'swelling-legs', name: 'Swelling in Legs', category: 'cardiovascular' },
+                { id: 'swelling-ankles', name: 'Swelling in Ankles', category: 'cardiovascular' },
+                { id: 'cold-hands-feet', name: 'Cold Hands and Feet', category: 'cardiovascular' },
+                
+                // Urinary Symptoms
+                { id: 'frequent-urination', name: 'Frequent Urination', category: 'urinary' },
+                { id: 'burning-urination', name: 'Burning Urination', category: 'urinary' },
+                { id: 'pelvic-pain', name: 'Pelvic Pain', category: 'urinary' },
+                { id: 'cloudy-urine', name: 'Cloudy Urine', category: 'urinary' },
+                { id: 'bloody-urine', name: 'Bloody Urine', category: 'urinary' },
+                { id: 'strong-urine-odor', name: 'Strong Urine Odor', category: 'urinary' },
+                { id: 'urinary-incontinence', name: 'Urinary Incontinence', category: 'urinary' },
+                { id: 'difficulty-urinating', name: 'Difficulty Urinating', category: 'urinary' },
+                { id: 'urgency-urination', name: 'Urgency to Urinate', category: 'urinary' },
+                
+                // Skin Symptoms
+                { id: 'rash', name: 'Rash', category: 'skin' },
+                { id: 'itching', name: 'Itching', category: 'skin' },
+                { id: 'hives', name: 'Hives', category: 'skin' },
+                { id: 'redness', name: 'Redness', category: 'skin' },
+                { id: 'swelling', name: 'Swelling', category: 'skin' },
+                { id: 'dry-skin', name: 'Dry Skin', category: 'skin' },
+                { id: 'oily-skin', name: 'Oily Skin', category: 'skin' },
+                { id: 'acne', name: 'Acne', category: 'skin' },
+                { id: 'blisters', name: 'Blisters', category: 'skin' },
+                { id: 'sores', name: 'Sores', category: 'skin' },
+                { id: 'skin-discoloration', name: 'Skin Discoloration', category: 'skin' },
+                { id: 'bruising', name: 'Easy Bruising', category: 'skin' },
+                { id: 'hair-loss', name: 'Hair Loss', category: 'skin' },
+                { id: 'nail-changes', name: 'Nail Changes', category: 'skin' },
+                
+                // Eye Symptoms
+                { id: 'eye-pain', name: 'Eye Pain', category: 'eye' },
+                { id: 'eye-redness', name: 'Eye Redness', category: 'eye' },
+                { id: 'blurred-vision', name: 'Blurred Vision', category: 'eye' },
+                { id: 'double-vision', name: 'Double Vision', category: 'eye' },
+                { id: 'dry-eyes', name: 'Dry Eyes', category: 'eye' },
+                { id: 'watery-eyes', name: 'Watery Eyes', category: 'eye' },
+                { id: 'sensitivity-light', name: 'Sensitivity to Light', category: 'eye' },
+                { id: 'eye-discharge', name: 'Eye Discharge', category: 'eye' },
+                { id: 'swollen-eyelids', name: 'Swollen Eyelids', category: 'eye' },
+                { id: 'flashing-lights', name: 'Flashing Lights', category: 'eye' },
+                { id: 'floaters', name: 'Floaters', category: 'eye' },
+                { id: 'itchy-eyes', name: 'Itchy Eyes', category: 'eye' },
+                
+                // Ear Symptoms
+                { id: 'ear-pain', name: 'Ear Pain', category: 'ear' },
+                { id: 'ear-itching', name: 'Ear Itching', category: 'ear' },
+                { id: 'ear-discharge', name: 'Ear Discharge', category: 'ear' },
+                { id: 'hearing-loss', name: 'Hearing Loss', category: 'ear' },
+                { id: 'ringing-ears', name: 'Ringing in Ears', category: 'ear' },
+                { id: 'ear-fullness', name: 'Ear Fullness', category: 'ear' },
+                { id: 'dizziness', name: 'Dizziness', category: 'ear' },
+                { id: 'vertigo', name: 'Vertigo', category: 'ear' },
+                { id: 'ear-pressure', name: 'Ear Pressure', category: 'ear' },
+                
+                // Mental Health Symptoms
+                { id: 'anxiety', name: 'Anxiety', category: 'mental' },
+                { id: 'depression', name: 'Depression', category: 'mental' },
+                { id: 'irritability', name: 'Irritability', category: 'mental' },
+                { id: 'mood-swings', name: 'Mood Swings', category: 'mental' },
+                { id: 'restlessness', name: 'Restlessness', category: 'mental' },
+                { id: 'sleep-problems', name: 'Sleep Problems', category: 'mental' },
+                { id: 'appetite-changes', name: 'Appetite Changes', category: 'mental' },
+                { id: 'concentration-problems', name: 'Concentration Problems', category: 'mental' },
+                { id: 'memory-problems', name: 'Memory Problems', category: 'mental' },
+                { id: 'social-withdrawal', name: 'Social Withdrawal', category: 'mental' },
+                { id: 'loss-interest', name: 'Loss of Interest', category: 'mental' },
+                { id: 'hopelessness', name: 'Feelings of Hopelessness', category: 'mental' },
+                { id: 'guilt', name: 'Excessive Guilt', category: 'mental' },
+                { id: 'suicidal-thoughts', name: 'Suicidal Thoughts', category: 'mental' }
+            ],
+            medications: [
+                { id: 'acetaminophen', name: 'Acetaminophen', type: 'Pain Reliever', uses: ['Pain', 'Fever'] },
+                { id: 'ibuprofen', name: 'Ibuprofen', type: 'NSAID', uses: ['Pain', 'Inflammation', 'Fever'] },
+                { id: 'amoxicillin', name: 'Amoxicillin', type: 'Antibiotic', uses: ['Bacterial Infections'] },
+                { id: 'loratadine', name: 'Loratadine', type: 'Antihistamine', uses: ['Allergies'] },
+                { id: 'omeprazole', name: 'Omeprazole', type: 'PPI', uses: ['Acid Reflux', 'GERD'] },
+                { id: 'atorvastatin', name: 'Atorvastatin', type: 'Statin', uses: ['High Cholesterol'] },
+                { id: 'metformin', name: 'Metformin', type: 'Antidiabetic', uses: ['Type 2 Diabetes'] },
+                { id: 'lisinopril', name: 'Lisinopril', type: 'ACE Inhibitor', uses: ['High Blood Pressure'] }
+            ],
+            procedures: [
+                { id: 'blood-test', name: 'Blood Test', purpose: 'Diagnose various conditions' },
+                { id: 'x-ray', name: 'X-Ray', purpose: 'Image bones and certain tissues' },
+                { id: 'mri', name: 'MRI', purpose: 'Detailed images of organs and tissues' },
+                { id: 'ct-scan', name: 'CT Scan', purpose: 'Cross-sectional body images' },
+                { id: 'ultrasound', name: 'Ultrasound', purpose: 'Image internal organs' },
+                { id: 'colonoscopy', name: 'Colonoscopy', purpose: 'Examine colon and rectum' },
+                { id: 'endoscopy', name: 'Endoscopy', purpose: 'Examine digestive tract' },
+                { id: 'biopsy', name: 'Biopsy', purpose: 'Sample tissue for testing' }
+            ]
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize variables
+            let selectedSeverity = '';
+            let selectedSaveMethod = '';
+            let currentAssessment = null;
+            let currentUser = null;
+            let currentRecordType = '';
+            
+            // ==================== FIREBASE AUTHENTICATION ====================
+            
+            // Authentication state observer
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // User is signed in
+                    console.log('✅ User signed in:', user.uid);
+                    currentUser = {
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        isAnonymous: user.isAnonymous
+                    };
+                    
+                    // Load user data from Firestore
+                    loadUserProfileFromFirestore(user.uid);
+                    loadHealthRecordsFromFirestore(user.uid);
+                    loadRecentReportsFromFirestore(user.uid);
+                    
+                    updateAuthUI(true);
+                } else {
+                    // User is signed out or is anonymous
+                    console.log('❌ No user signed in');
+                    currentUser = null;
+                    
+                    // Try anonymous authentication
+                    signInAnonymously();
+                    updateAuthUI(false);
+                }
+            });
+            
+            // Anonymous authentication
+            function signInAnonymously() {
+                auth.signInAnonymously()
+                    .then((result) => {
+                        console.log('✅ Anonymous user signed in');
+                    })
+                    .catch((error) => {
+                        console.error('❌ Anonymous sign-in error:', error);
+                    });
+            }
+            
+            // Update UI based on authentication state
+            function updateAuthUI(isSignedIn) {
+                const userNameElement = document.getElementById('user-name');
+                const profileNameElement = document.getElementById('profile-full-name');
+                const authStatus = document.getElementById('auth-status');
+                const authButtons = document.getElementById('auth-buttons');
+                
+                if (isSignedIn && currentUser) {
+                    const displayName = currentUser.displayName || 
+                                      currentUser.email || 
+                                      (currentUser.isAnonymous ? 'Guest User' : 'User');
+                    userNameElement.textContent = displayName;
+                    profileNameElement.textContent = displayName;
+                    
+                    // Update auth status
+                    if (currentUser.isAnonymous) {
+                        authStatus.textContent = '🔓 Signed in as Guest - Data stored locally only';
+                        authStatus.className = 'auth-status auth-success';
+                        authStatus.style.display = 'block';
+                        
+                        // Show sign-up options for anonymous users
+                        authButtons.innerHTML = `
+                            <button class="btn btn-google" id="google-signin-btn">
+                                <i class="fab fa-google"></i> Sign in with Google to Save Data
+                            </button>
+                            <button class="btn btn-outline" id="email-signup-btn">
+                                <i class="fas fa-envelope"></i> Create Account with Email
+                            </button>
+                        `;
+                    } else {
+                        authStatus.textContent = '✅ Signed in - Data synced to cloud';
+                        authStatus.className = 'auth-status auth-success';
+                        authStatus.style.display = 'block';
+                        
+                        // Show sign-out option for authenticated users
+                        authButtons.innerHTML = `
+                            <button class="btn btn-outline" id="sign-out-btn">
+                                <i class="fas fa-sign-out-alt"></i> Sign Out
+                            </button>
+                        `;
+                    }
+                } else {
+                    userNameElement.textContent = 'Sign In';
+                    profileNameElement.textContent = 'Guest User';
+                    
+                    authStatus.textContent = '🔒 Not signed in - Data stored locally only';
+                    authStatus.className = 'auth-status auth-error';
+                    authStatus.style.display = 'block';
+                    
+                    // Show sign-in options
+                    authButtons.innerHTML = `
+                        <button class="btn btn-google" id="google-signin-btn">
+                            <i class="fab fa-google"></i> Sign in with Google
+                        </button>
+                        <button class="btn btn-outline" id="email-signin-btn">
+                            <i class="fas fa-envelope"></i> Sign in with Email
+                        </button>
+                    `;
+                }
+                
+                // Add event listeners for auth buttons
+                setupAuthButtonListeners();
+            }
+            
+            // Setup authentication button listeners
+            function setupAuthButtonListeners() {
+                // Google Sign-In
+                const googleBtn = document.getElementById('google-signin-btn');
+                if (googleBtn) {
+                    googleBtn.addEventListener('click', signInWithGoogle);
+                }
+                
+                // Sign Out
+                const signOutBtn = document.getElementById('sign-out-btn');
+                if (signOutBtn) {
+                    signOutBtn.addEventListener('click', signOut);
+                }
+                
+                // Email Sign-In/Sign-Up (placeholder - you can implement this)
+                const emailSignInBtn = document.getElementById('email-signin-btn');
+                if (emailSignInBtn) {
+                    emailSignInBtn.addEventListener('click', () => {
+                        alert('Email authentication would be implemented here. For now, use Google Sign-In.');
+                    });
+                }
+                
+                const emailSignUpBtn = document.getElementById('email-signup-btn');
+                if (emailSignUpBtn) {
+                    emailSignUpBtn.addEventListener('click', () => {
+                        alert('Email registration would be implemented here. For now, use Google Sign-In.');
+                    });
+                }
+            }
+            
+            // Google Sign-In function
+            function signInWithGoogle() {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithPopup(provider)
+                    .then((result) => {
+                        console.log('✅ Google sign-in successful');
+                    })
+                    .catch((error) => {
+                        console.error('❌ Google sign-in error:', error);
+                        const authStatus = document.getElementById('auth-status');
+                        authStatus.textContent = '❌ Sign-in failed: ' + error.message;
+                        authStatus.className = 'auth-status auth-error';
+                        authStatus.style.display = 'block';
+                    });
+            }
+            
+            // Sign out function
+            function signOut() {
+                auth.signOut()
+                    .then(() => {
+                        console.log('✅ User signed out');
+                    })
+                    .catch((error) => {
+                        console.error('❌ Sign-out error:', error);
+                    });
+            }
+            
+            // ==================== FIRESTORE DATA OPERATIONS ====================
+            
+            // Load user profile from Firestore
+            async function loadUserProfileFromFirestore(userId) {
+                try {
+                    const doc = await db.collection('users').doc(userId).get();
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        currentUser = { ...currentUser, ...userData };
+                        updateProfileDisplay();
+                        console.log('✅ User profile loaded from Firestore');
+                    } else {
+                        console.log('ℹ️ No user profile found in Firestore');
+                    // Load from localStorage as fallback
+                        loadUserProfileFromLocalStorage();
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading user profile from Firestore:', error);
+                    // Fallback to localStorage
+                    loadUserProfileFromLocalStorage();
+                }
+            }
+            
+            // Save user profile to Firestore
+            async function saveUserProfileToFirestore(profile) {
+                try {
+                    if (!currentUser || !currentUser.uid) {
+                        console.error('❌ No user authenticated');
+                        return false;
+                    }
+                    
+                    await db.collection('users').doc(currentUser.uid).set({
+                        ...profile,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    
+                    console.log('✅ User profile saved to Firestore');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error saving user profile to Firestore:', error);
+                    return false;
+                }
+            }
+            
+            // Load health records from Firestore
+            async function loadHealthRecordsFromFirestore(userId) {
+                try {
+                    const snapshot = await db.collection('healthRecords').doc(userId).get();
+                    if (snapshot.exists) {
+                        const records = snapshot.data();
+                        displayHealthRecords(records);
+                        console.log('✅ Health records loaded from Firestore');
+                    } else {
+                        console.log('ℹ️ No health records found in Firestore');
+                        // Load from localStorage as fallback
+                        const localRecords = loadHealthRecords();
+                        displayHealthRecords(localRecords);
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading health records from Firestore:', error);
+                    // Fallback to localStorage
+                    const localRecords = loadHealthRecords();
+                    displayHealthRecords(localRecords);
+                }
+            }
+            
+            // Save health records to Firestore
+            async function saveHealthRecordsToFirestore(records) {
+                try {
+                    if (!currentUser || !currentUser.uid) {
+                        console.error('❌ No user authenticated');
+                        return false;
+                    }
+                    
+                    await db.collection('healthRecords').doc(currentUser.uid).set({
+                        ...records,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    
+                    console.log('✅ Health records saved to Firestore');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error saving health records to Firestore:', error);
+                    return false;
+                }
+            }
+            
+            // Load recent reports from Firestore
+            async function loadRecentReportsFromFirestore(userId) {
+                try {
+                    const snapshot = await db.collection('reports')
+                        .doc(userId)
+                        .collection('userReports')
+                        .orderBy('savedAt', 'desc')
+                        .limit(5)
+                        .get();
+                    
+                    const reports = [];
+                    snapshot.forEach(doc => {
+                        reports.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    displayRecentReports(reports);
+                    console.log('✅ Recent reports loaded from Firestore');
+                } catch (error) {
+                    console.error('❌ Error loading recent reports from Firestore:', error);
+                    // Fallback to localStorage
+                    loadRecentReportsFromLocalStorage();
+                }
+            }
+            
+            // Save health report to Firestore
+            async function saveHealthReportToFirestore(report) {
+                try {
+                    if (!currentUser || !currentUser.uid) {
+                        console.error('❌ No user authenticated');
+                        return false;
+                    }
+                    
+                    const reportRef = await db.collection('reports')
+                        .doc(currentUser.uid)
+                        .collection('userReports')
+                        .add({
+                            ...report,
+                            savedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    
+                    console.log('✅ Health report saved to Firestore with ID:', reportRef.id);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error saving health report to Firestore:', error);
+                    return false;
+                }
+            }
+            
+            // ==================== UPDATED PROFILE MANAGEMENT ====================
+            
+            // Load user profile from localStorage (fallback)
+            function loadUserProfileFromLocalStorage() {
+                try {
+                    const userData = localStorage.getItem('healthnestUserProfile');
+                    if (userData) {
+                        const localProfile = JSON.parse(userData);
+                        if (currentUser) {
+                            currentUser = { ...currentUser, ...localProfile };
+                        } else {
+                            currentUser = localProfile;
+                        }
+                        updateProfileDisplay();
+                        console.log('✅ User profile loaded from localStorage');
+                    }
+                } catch (error) {
+                    console.error('Error loading user profile from localStorage:', error);
+                }
+            }
+            
+            // Save user profile (combines localStorage and Firestore)
+            async function saveUserProfile(profile) {
+                // Save to localStorage for offline fallback
+                try {
+                    localStorage.setItem('healthnestUserProfile', JSON.stringify(profile));
+                } catch (error) {
+                    console.error('Error saving to localStorage:', error);
+                }
+                
+                // Save to Firestore if user is authenticated and not anonymous
+                let firestoreSuccess = true;
+                if (currentUser && currentUser.uid && !currentUser.isAnonymous) {
+                    firestoreSuccess = await saveUserProfileToFirestore(profile);
+                }
+                
+                if (firestoreSuccess) {
+                    currentUser = { ...currentUser, ...profile };
+                    updateProfileDisplay();
+                }
+                
+                return firestoreSuccess;
+            }
+            
+            // Load user profile (with Firestore priority)
+            function loadUserProfile() {
+                // Firestore loading is handled in auth state change
+                // This function maintains compatibility with existing code
+                loadUserProfileFromLocalStorage();
+            }
+            
+            // Update profile display
+            function updateProfileDisplay() {
+                if (currentUser) {
+                    document.getElementById('user-name').textContent = currentUser.name || 
+                                                                     currentUser.email || 
+                                                                     (currentUser.isAnonymous ? 'Guest User' : 'User');
+                    document.getElementById('profile-full-name').textContent = currentUser.name || 
+                                                                              currentUser.email || 
+                                                                              (currentUser.isAnonymous ? 'Guest User' : 'User');
+                    document.getElementById('profile-age').textContent = currentUser.age || 'Not set';
+                    document.getElementById('profile-gender').textContent = currentUser.gender || 'Not set';
+                    document.getElementById('profile-phone').textContent = currentUser.phone || 'Not set';
+                    document.getElementById('profile-email').textContent = currentUser.email || 'Not set';
+                    
+                    // Pre-fill form fields if user profile exists
+                    if (currentUser.age) document.getElementById('age').value = currentUser.age;
+                    if (currentUser.gender) document.getElementById('gender').value = currentUser.gender;
+                    if (currentUser.email) document.getElementById('email-address').value = currentUser.email;
+                }
+            }
+            
+            // ==================== UPDATED HEALTH RECORDS MANAGEMENT ====================
+            
+            // Load health records (with Firestore priority)
+            function loadHealthRecords() {
+                // Firestore loading is handled separately
+                // This function maintains compatibility with existing code
+                try {
+                    const records = JSON.parse(localStorage.getItem('healthnestHealthRecords')) || {
+                        vaccinations: [],
+                        medications: [],
+                        allergies: [],
+                        conditions: []
+                    };
+                    return records;
+                } catch (error) {
+                    console.error('Error loading health records from localStorage:', error);
+                    return { vaccinations: [], medications: [], allergies: [], conditions: [] };
+                }
+            }
+            
+            // Save health records (both localStorage and Firestore)
+            async function saveHealthRecords(records) {
+                // Save to localStorage for offline fallback
+                try {
+                    localStorage.setItem('healthnestHealthRecords', JSON.stringify(records));
+                } catch (error) {
+                    console.error('Error saving to localStorage:', error);
+                }
+                
+                // Save to Firestore if user is authenticated and not anonymous
+                if (currentUser && currentUser.uid && !currentUser.isAnonymous) {
+                    return await saveHealthRecordsToFirestore(records);
+                }
+                
+                return true;
+            }
+            
+            // Display health records
+            function displayHealthRecords(records) {
+                // Display vaccinations
+                const vaccinationsList = document.getElementById('vaccinations-list');
+                vaccinationsList.innerHTML = '';
+                if (records.vaccinations.length === 0) {
+                    vaccinationsList.innerHTML = '<p>No vaccination records found.</p>';
+                } else {
+                    records.vaccinations.forEach(vaccination => {
+                        const item = document.createElement('div');
+                        item.className = 'record-item';
+                        item.innerHTML = `
+                            <div class="record-info">
+                                <div class="record-date">${vaccination.name}</div>
+                                <div class="record-details">Date: ${vaccination.date} | Next due: ${vaccination.nextDue || 'N/A'}</div>
+                            </div>
+                            <div class="report-actions">
+                                <button class="report-action delete-record" data-type="vaccination" data-id="${vaccination.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        vaccinationsList.appendChild(item);
+                    });
+                }
+                
+                // Display medications
+                const medicationsList = document.getElementById('medications-list');
+                medicationsList.innerHTML = '';
+                if (records.medications.length === 0) {
+                    medicationsList.innerHTML = '<p>No medication records found.</p>';
+                } else {
+                    records.medications.forEach(medication => {
+                        const item = document.createElement('div');
+                        item.className = 'record-item';
+                        item.innerHTML = `
+                            <div class="record-info">
+                                <div class="record-date">${medication.name}</div>
+                                <div class="record-details">Dosage: ${medication.dosage} | Frequency: ${medication.frequency}</div>
+                            </div>
+                            <div class="report-actions">
+                                <button class="report-action delete-record" data-type="medication" data-id="${medication.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        medicationsList.appendChild(item);
+                    });
+                }
+                
+                // Display allergies
+                const allergiesList = document.getElementById('allergies-list');
+                allergiesList.innerHTML = '';
+                if (records.allergies.length === 0) {
+                    allergiesList.innerHTML = '<p>No allergy records found.</p>';
+                } else {
+                    records.allergies.forEach(allergy => {
+                        const item = document.createElement('div');
+                        item.className = 'record-item';
+                        item.innerHTML = `
+                            <div class="record-info">
+                                <div class="record-date">${allergy.name}</div>
+                                <div class="record-details">Severity: ${allergy.severity} | Reaction: ${allergy.reaction}</div>
+                            </div>
+                            <div class="report-actions">
+                                <button class="report-action delete-record" data-type="allergy" data-id="${allergy.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        allergiesList.appendChild(item);
+                    });
+                }
+                
+                // Display conditions
+                const conditionsList = document.getElementById('conditions-list');
+                conditionsList.innerHTML = '';
+                if (records.conditions.length === 0) {
+                    conditionsList.innerHTML = '<p>No medical condition records found.</p>';
+                } else {
+                    records.conditions.forEach(condition => {
+                        const item = document.createElement('div');
+                        item.className = 'record-item';
+                        item.innerHTML = `
+                            <div class="record-info">
+                                <div class="record-date">${condition.name}</div>
+                                <div class="record-details">Diagnosed: ${condition.diagnosisDate} | Status: ${condition.status}</div>
+                            </div>
+                            <div class="report-actions">
+                                <button class="report-action delete-record" data-type="condition" data-id="${condition.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        conditionsList.appendChild(item);
+                    });
+                }
+            }
+            
+            // ==================== UPDATED RECENT REPORTS ====================
+            
+            // Load and display recent health reports from localStorage (fallback)
+            function loadRecentReportsFromLocalStorage() {
+                try {
+                    const reports = JSON.parse(localStorage.getItem('healthnestHealthReports')) || [];
+                    displayRecentReports(reports);
+                } catch (error) {
+                    console.error('Error loading recent reports from localStorage:', error);
+                }
+            }
+            
+            // Display recent reports
+            function displayRecentReports(reports) {
+                const recentReportsList = document.getElementById('recent-reports-list');
+                recentReportsList.innerHTML = '';
+                
+                if (reports.length === 0) {
+                    recentReportsList.innerHTML = '<p>No recent health reports.</p>';
+                    return;
+                }
+                
+                // Show only the 3 most recent reports
+                const recentReports = reports.slice(0, 3);
+                
+                recentReports.forEach(report => {
+                    const item = document.createElement('div');
+                    item.className = 'history-item';
+                    
+                    // Format date
+                    const reportDate = report.savedAt ? 
+                        (report.savedAt.toDate ? report.savedAt.toDate().toLocaleDateString() : new Date(report.savedAt).toLocaleDateString()) : 
+                        new Date().toLocaleDateString();
+                    
+                    item.innerHTML = `
+                        <div class="history-date">${reportDate}</div>
+                        <div class="history-symptoms">${report.symptoms ? report.symptoms.slice(0, 3).join(', ') : 'No symptoms'}${report.symptoms && report.symptoms.length > 3 ? '...' : ''}</div>
+                    `;
+                    item.addEventListener('click', () => {
+                        alert(`Report from ${reportDate}\nSymptoms: ${report.symptoms ? report.symptoms.join(', ') : 'No symptoms recorded'}`);
+                    });
+                    recentReportsList.appendChild(item);
+                });
+            }
+            
+            // Load recent reports (compatibility function)
+            function loadRecentReports() {
+                // Firestore loading is handled separately
+                // This maintains compatibility with existing code
+                loadRecentReportsFromLocalStorage();
+            }
+            
+            // ==================== UPDATED HEALTH REPORT SAVING ====================
+            
+            // Enhanced save health report function
+            async function saveHealthReport(method) {
+                if (!currentAssessment) return;
+                
+                switch(method) {
+                    case 'local':
+                        await saveToFirestore();
+                        break;
+                    case 'download':
+                        downloadAsPDF();
+                        break;
+                }
+            }
+            
+            // Save to Firestore instead of localStorage
+            async function saveToFirestore() {
+                try {
+                    const report = {
+                        ...currentAssessment,
+                        savedAt: new Date().toISOString()
+                    };
+                    
+                    let success = false;
+                    
+                    // Try to save to Firestore if user is authenticated
+                    if (currentUser && currentUser.uid && !currentUser.isAnonymous) {
+                        success = await saveHealthReportToFirestore(report);
+                    }
+                    
+                    // If Firestore save failed or user is anonymous, save to localStorage
+                    if (!success) {
+                        const existingReports = JSON.parse(localStorage.getItem('healthnestHealthReports')) || [];
+                        const reportWithId = {
+                            id: Date.now().toString(),
+                            ...report
+                        };
+                        existingReports.unshift(reportWithId);
+                        localStorage.setItem('healthnestHealthReports', JSON.stringify(existingReports));
+                        success = true;
+                    }
+                    
+                    if (success) {
+                        alert('Health report saved successfully!');
+                        loadRecentReports();
+                    } else {
+                        throw new Error('Failed to save report');
+                    }
+                } catch (error) {
+                    alert('Error saving report: ' + error.message);
+                }
+            }
+            
+            // ==================== ENHANCED SYMPTOM ANALYSIS ====================
+            
+            // Populate symptoms in the form
+            function populateSymptoms() {
+                const symptomsContainer = document.getElementById('symptoms-checkbox-group');
+                symptomsContainer.innerHTML = '';
+                
+                medicalDatabase.symptoms.forEach(symptom => {
+                    const item = document.createElement('div');
+                    item.className = 'checkbox-item';
+                    item.innerHTML = `
+                        <input type="checkbox" id="${symptom.id}" value="${symptom.id}">
+                        <label for="${symptom.id}">${symptom.name}</label>
+                    `;
+                    symptomsContainer.appendChild(item);
+                });
+            }
+            
+            // Enhanced symptom analysis algorithm
+            function analyzeSymptoms(selectedSymptoms, age, gender, symptomDuration, symptomDescription) {
+                const matchingConditions = [];
+                
+                for (const condition of medicalDatabase.conditions) {
+                    const matchingSymptoms = condition.symptoms.filter(symptom => 
+                        selectedSymptoms.includes(symptom)
+                    );
+                    
+                    const keySymptoms = condition.keySymptoms.filter(symptom => 
+                        selectedSymptoms.includes(symptom)
+                    );
+                    
+                    // Calculate match score with enhanced algorithm
+                    let matchScore = 0;
+                    
+                    // Base score: percentage of condition symptoms that match
+                    const baseScore = matchingSymptoms.length / condition.symptoms.length;
+                    
+                    // Key symptom bonus: extra points for matching key symptoms
+                    const keySymptomBonus = keySymptoms.length / condition.keySymptoms.length * 0.3;
+                    
+                    // Symptom count factor: more symptoms increase confidence
+                    const symptomCountFactor = Math.min(selectedSymptoms.length / 5, 0.2);
+                    
+                    // Duration factor: some conditions are more likely with certain durations
+                    const durationFactor = calculateDurationFactor(condition.id, symptomDuration);
+                    
+                    // Age factor: some conditions are age-specific
+                    const ageFactor = calculateAgeFactor(condition.id, age);
+                    
+                    // Gender factor: some conditions are gender-specific
+                    const genderFactor = calculateGenderFactor(condition.id, gender);
+                    
+                    // Combine all factors
+                    matchScore = baseScore * 0.5 + keySymptomBonus + symptomCountFactor + durationFactor + ageFactor + genderFactor;
+                    
+                    // Ensure score is between 0 and 1
+                    matchScore = Math.min(Math.max(matchScore, 0), 1);
+                    
+                    // Only include conditions with significant match
+                    if (matchScore >= 0.3) {
+                        matchingConditions.push({
+                            ...condition,
+                            matchScore: matchScore,
+                            matchedSymptoms: matchingSymptoms,
+                            keySymptomsMatched: keySymptoms.length
+                        });
+                    }
+                }
+                
+                // Sort by match score (highest first)
+                matchingConditions.sort((a, b) => b.matchScore - a.matchScore);
+                
+                return matchingConditions;
+            }
+            
+            // Calculate duration factor for condition matching
+            function calculateDurationFactor(conditionId, duration) {
+                const durationFactors = {
+                    'common-cold': { 'less-than-day': 0.1, '1-3-days': 0.2, '4-7-days': 0.1, '1-2-weeks': 0, 'more-than-2-weeks': -0.1 },
+                    'influenza': { 'less-than-day': 0.1, '1-3-days': 0.2, '4-7-days': 0.1, '1-2-weeks': 0, 'more-than-2-weeks': -0.1 },
+                    'covid-19': { 'less-than-day': 0.1, '1-3-days': 0.2, '4-7-days': 0.2, '1-2-weeks': 0.1, 'more-than-2-weeks': 0 },
+                    'migraine': { 'less-than-day': 0.2, '1-3-days': 0.1, '4-7-days': 0, '1-2-weeks': -0.1, 'more-than-2-weeks': -0.2 },
+                    'gastroenteritis': { 'less-than-day': 0.2, '1-3-days': 0.1, '4-7-days': 0, '1-2-weeks': -0.1, 'more-than-2-weeks': -0.2 },
+                    'bronchitis': { 'less-than-day': 0, '1-3-days': 0.1, '4-7-days': 0.2, '1-2-weeks': 0.1, 'more-than-2-weeks': 0 },
+                    'pneumonia': { 'less-than-day': 0, '1-3-days': 0.1, '4-7-days': 0.2, '1-2-weeks': 0.1, 'more-than-2-weeks': 0 },
+                    'uti': { 'less-than-day': 0.1, '1-3-days': 0.2, '4-7-days': 0.1, '1-2-weeks': 0, 'more-than-2-weeks': -0.1 },
+                    'hypertension': { 'less-than-day': -0.1, '1-3-days': -0.1, '4-7-days': 0, '1-2-weeks': 0.1, 'more-than-2-weeks': 0.2 },
+                    'anxiety': { 'less-than-day': 0, '1-3-days': 0, '4-7-days': 0.1, '1-2-weeks': 0.2, 'more-than-2-weeks': 0.2 },
+                    'sinusitis': { 'less-than-day': 0, '1-3-days': 0.1, '4-7-days': 0.2, '1-2-weeks': 0.1, 'more-than-2-weeks': 0 },
+                    'asthma': { 'less-than-day': 0.1, '1-3-days': 0.1, '4-7-days': 0, '1-2-weeks': 0, 'more-than-2-weeks': 0.1 },
+                    'allergic-rhinitis': { 'less-than-day': 0.1, '1-3-days': 0.1, '4-7-days': 0, '1-2-weeks': 0, 'more-than-2-weeks': 0.1 },
+                    'tension-headache': { 'less-than-day': 0.1, '1-3-days': 0.1, '4-7-days': 0, '1-2-weeks': 0, 'more-than-2-weeks': 0.1 },
+                    'gastroesophageal-reflux': { 'less-than-day': 0, '1-3-days': 0, '4-7-days': 0.1, '1-2-weeks': 0.2, 'more-than-2-weeks': 0.2 },
+                    'depression': { 'less-than-day': -0.1, '1-3-days': -0.1, '4-7-days': 0, '1-2-weeks': 0.1, 'more-than-2-weeks': 0.2 }
+                };
+                
+                return durationFactors[conditionId]?.[duration] || 0;
+            }
+            
+            // Calculate age factor for condition matching
+            function calculateAgeFactor(conditionId, age) {
+                if (!age) return 0;
+                
+                const ageFactors = {
+                    'common-cold': age < 18 ? 0.1 : age > 65 ? 0.1 : 0,
+                    'influenza': age < 18 ? 0.1 : age > 65 ? 0.1 : 0,
+                    'covid-19': age > 65 ? 0.1 : 0,
+                    'migraine': age < 50 ? 0.1 : 0,
+                    'gastroenteritis': age < 18 ? 0.1 : age > 65 ? 0.1 : 0,
+                    'bronchitis': age > 65 ? 0.1 : 0,
+                    'pneumonia': age < 5 ? 0.1 : age > 65 ? 0.1 : 0,
+                    'uti': age > 65 ? 0.1 : 0,
+                    'hypertension': age > 40 ? 0.1 : 0,
+                    'anxiety': age < 50 ? 0.1 : 0,
+                    'sinusitis': 0,
+                    'asthma': age < 18 ? 0.1 : 0,
+                    'allergic-rhinitis': age < 40 ? 0.1 : 0,
+                    'tension-headache': 0,
+                    'gastroesophageal-reflux': age > 40 ? 0.1 : 0,
+                    'depression': age > 65 ? 0.1 : 0
+                };
+                
+                return ageFactors[conditionId] || 0;
+            }
+            
+            // Calculate gender factor for condition matching
+            function calculateGenderFactor(conditionId, gender) {
+                if (!gender) return 0;
+                
+                const genderFactors = {
+                    'migraine': gender === 'female' ? 0.1 : 0,
+                    'uti': gender === 'female' ? 0.1 : 0,
+                    'anxiety': gender === 'female' ? 0.05 : 0,
+                    'depression': gender === 'female' ? 0.05 : 0
+                };
+                
+                return genderFactors[conditionId] || 0;
+            }
+            
+            // Display medical database content
+            function displayDatabaseContent(category, searchTerm = '') {
+                const databaseResults = document.getElementById('database-results');
+                databaseResults.innerHTML = '';
+                
+                let content = medicalDatabase[category];
+                if (!content) return;
+                
+                // Filter by search term if provided
+                if (searchTerm) {
+                    content = content.filter(item => 
+                        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                        (item.uses && item.uses.some(use => use.toLowerCase().includes(searchTerm.toLowerCase())))
+                    );
+                }
+                
+                if (content.length === 0) {
+                    databaseResults.innerHTML = '<p>No results found.</p>';
+                    return;
+                }
+                
+                content.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'condition-item';
+                    
+                    let details = '';
+                    if (category === 'conditions') {
+                        details = `
+                            <div class="condition-symptoms">
+                                <strong>Symptoms:</strong> ${item.symptoms.join(', ')}
+                            </div>
+                            <div class="condition-symptoms">
+                                <strong>Description:</strong> ${item.description}
+                            </div>
+                            <div class="condition-symptoms">
+                                <strong>Treatments:</strong> ${item.treatments.join(', ')}
+                            </div>
+                        `;
+                    } else if (category === 'medications') {
+                        details = `
+                            <div class="condition-symptoms">
+                                <strong>Type:</strong> ${item.type}
+                            </div>
+                            <div class="condition-symptoms">
+                                <strong>Uses:</strong> ${item.uses.join(', ')}
+                            </div>
+                        `;
+                    } else if (category === 'procedures') {
+                        details = `
+                            <div class="condition-symptoms">
+                                <strong>Purpose:</strong> ${item.purpose}
+                            </div>
+                        `;
+                    } else if (category === 'symptoms') {
+                        details = `
+                            <div class="condition-symptoms">
+                                <strong>Category:</strong> ${item.category}
+                            </div>
+                        `;
+                    }
+                    
+                    itemElement.innerHTML = `
+                        <div class="condition-name">${item.name}</div>
+                        ${details}
+                    `;
+                    databaseResults.appendChild(itemElement);
+                });
+            }
+            
+            // Tab functionality
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show active tab content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `${tabId}-tab`) {
+                            content.classList.add('active');
+                        }
+                    });
+                    
+                    // Update progress bar
+                    updateProgressBar();
+                });
+            });
+            
+            // Health record tabs
+            const recordTabs = document.querySelectorAll('.record-tab');
+            const recordContents = document.querySelectorAll('.record-content');
+            
+            recordTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-record-tab');
+                    
+                    // Update active tab
+                    recordTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show active tab content
+                    recordContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `${tabId}-tab`) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // Medical database categories
+            const databaseCategories = document.querySelectorAll('.database-category');
+            
+            databaseCategories.forEach(category => {
+                category.addEventListener('click', () => {
+                    const categoryId = category.getAttribute('data-category');
+                    
+                    // Update active category
+                    databaseCategories.forEach(c => c.classList.remove('active'));
+                    category.classList.add('active');
+                    
+                    // Display content for selected category
+                    displayDatabaseContent(categoryId);
+                });
+            });
+            
+            // Medical database search
+            document.getElementById('medical-search').addEventListener('input', function() {
+                const searchTerm = this.value;
+                const activeCategory = document.querySelector('.database-category.active').getAttribute('data-category');
+                displayDatabaseContent(activeCategory, searchTerm);
+            });
+            
+            // Update progress bar based on current tab
+            function updateProgressBar() {
+                const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                const progressFill = document.getElementById('form-progress');
+                const progressText = document.querySelector('.progress-text span:last-child');
+                
+                let progress = 0;
+                switch(activeTab) {
+                    case 'basic':
+                        progress = 33;
+                        break;
+                    case 'symptoms':
+                        progress = 66;
+                        break;
+                    case 'lifestyle':
+                        progress = 100;
+                        break;
+                }
+                
+                if (progressFill) progressFill.style.width = `${progress}%`;
+                if (progressText) progressText.textContent = `${progress}% Complete`;
+            }
+            
+            // Next tab buttons with validation
+            document.querySelectorAll('.next-tab').forEach(button => {
+                button.addEventListener('click', () => {
+                    const nextTab = button.getAttribute('data-next');
+                    const currentTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                    
+                    // Validate current tab before proceeding
+                    if (validateTab(currentTab)) {
+                        document.querySelector(`.tab[data-tab="${nextTab}"]`).click();
+                    }
+                });
+            });
+            
+            // Previous tab buttons
+            document.querySelectorAll('.prev-tab').forEach(button => {
+                button.addEventListener('click', () => {
+                    const prevTab = button.getAttribute('data-prev');
+                    document.querySelector(`.tab[data-tab="${prevTab}"]`).click();
+                });
+            });
+            
+            // Tab validation
+            function validateTab(tabId) {
+                let isValid = true;
+                
+                // Clear previous errors
+                document.querySelectorAll('.error-message').forEach(error => {
+                    error.style.display = 'none';
+                });
+                document.querySelectorAll('.validation-error').forEach(element => {
+                    element.classList.remove('validation-error');
+                });
+                
+                // Validate based on current tab
+                switch(tabId) {
+                    case 'basic':
+                        const age = document.getElementById('age').value;
+                        const gender = document.getElementById('gender').value;
+                        
+                        if (!age || age < 1 || age > 120) {
+                            document.getElementById('age-error').style.display = 'block';
+                            document.getElementById('age').classList.add('validation-error');
+                            isValid = false;
+                        }
+                        
+                        if (!gender) {
+                            document.getElementById('gender-error').style.display = 'block';
+                            document.getElementById('gender').classList.add('validation-error');
+                            isValid = false;
+                        }
+                        break;
+                        
+                    case 'symptoms':
+                        const symptoms = document.querySelectorAll('input[type="checkbox"]:checked');
+                        const duration = document.getElementById('symptom-duration').value;
+                        
+                        if (symptoms.length === 0) {
+                            document.getElementById('symptoms-error').style.display = 'block';
+                            document.getElementById('symptoms-checkbox-group').classList.add('validation-error');
+                            isValid = false;
+                        }
+                        
+                        if (!duration) {
+                            document.getElementById('duration-error').style.display = 'block';
+                            document.getElementById('symptom-duration').classList.add('validation-error');
+                            isValid = false;
+                        }
+                        
+                        if (!selectedSeverity) {
+                            document.getElementById('severity-error').style.display = 'block';
+                            isValid = false;
+                        }
+                        break;
+                }
+                
+                return isValid;
+            }
+            
+            // Symptom severity selection
+            const severityBtns = document.querySelectorAll('.severity-btn');
+            
+            severityBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    severityBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedSeverity = btn.getAttribute('data-severity');
+                    
+                    // Clear error if present
+                    document.getElementById('severity-error').style.display = 'none';
+                });
+            });
+            
+            // Symptom category selection
+            const symptomCategories = document.querySelectorAll('.symptom-category-item');
+            
+            symptomCategories.forEach(category => {
+                category.addEventListener('click', () => {
+                    symptomCategories.forEach(c => c.classList.remove('active'));
+                    category.classList.add('active');
+                    
+                    // Filter symptoms by category
+                    filterSymptomsByCategory(category.getAttribute('data-category'));
+                });
+            });
+            
+            // Filter symptoms by category
+            function filterSymptomsByCategory(category) {
+                const symptoms = document.querySelectorAll('.checkbox-item');
+                symptoms.forEach(item => {
+                    const symptomId = item.querySelector('input').value;
+                    const symptom = medicalDatabase.symptoms.find(s => s.id === symptomId);
+                    if (symptom && symptom.category === category) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            }
+            
+            // User Profile Modal
+            const userProfileModal = document.getElementById('user-profile-modal');
+            const healthRecordModal = document.getElementById('health-record-modal');
+            const saveReportModal = document.getElementById('save-report-modal');
+            const closeModalButtons = document.querySelectorAll('.close-modal, #cancel-profile, #cancel-record, #cancel-save');
+            
+            // Open user profile modal
+            document.getElementById('user-profile-btn').addEventListener('click', () => {
+                // Pre-fill form with current user data
+                if (currentUser) {
+                    document.getElementById('profile-name').value = currentUser.name || '';
+                    document.getElementById('profile-email').value = currentUser.email || '';
+                    document.getElementById('profile-phone-input').value = currentUser.phone || '';
+                    document.getElementById('profile-age-input').value = currentUser.age || '';
+                    document.getElementById('profile-gender-input').value = currentUser.gender || '';
+                }
+                userProfileModal.style.display = 'flex';
+            });
+            
+            document.getElementById('edit-profile-btn').addEventListener('click', () => {
+                // Pre-fill form with current user data
+                if (currentUser) {
+                    document.getElementById('profile-name').value = currentUser.name || '';
+                    document.getElementById('profile-email').value = currentUser.email || '';
+                    document.getElementById('profile-phone-input').value = currentUser.phone || '';
+                    document.getElementById('profile-age-input').value = currentUser.age || '';
+                    document.getElementById('profile-gender-input').value = currentUser.gender || '';
+                }
+                userProfileModal.style.display = 'flex';
+            });
+            
+            // Save profile
+            document.getElementById('save-profile').addEventListener('click', async () => {
+                const profile = {
+                    name: document.getElementById('profile-name').value,
+                    email: document.getElementById('profile-email').value,
+                    phone: document.getElementById('profile-phone-input').value,
+                    age: document.getElementById('profile-age-input').value,
+                    gender: document.getElementById('profile-gender-input').value
+                };
+                
+                // If user is anonymous and entered an email, offer to upgrade account
+                if (currentUser && currentUser.isAnonymous && profile.email) {
+                    const upgrade = confirm('Would you like to create a permanent account with this email? This will preserve your data.');
+                    if (upgrade) {
+                        // Here you would implement account linking
+                        alert('Account upgrade feature would be implemented here. For now, use Google Sign-In to create a permanent account.');
+                    }
+                }
+                
+                const success = await saveUserProfile(profile);
+                if (success) {
+                    alert('Profile saved successfully!');
+                    userProfileModal.style.display = 'none';
+                } else {
+                    alert('Error saving profile. Please try again.');
+                }
+            });
+            
+            // Add health record buttons
+            document.querySelectorAll('.add-record-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentRecordType = button.getAttribute('data-record-type');
+                    openHealthRecordModal(currentRecordType);
+                });
+            });
+            
+            // Open health record modal
+            function openHealthRecordModal(recordType) {
+                const modalTitle = document.getElementById('record-modal-title');
+                const formContent = document.getElementById('record-form-content');
+                
+                // Set modal title
+                modalTitle.textContent = `Add ${recordType.charAt(0).toUpperCase() + recordType.slice(1)} Record`;
+                
+                // Create form based on record type
+                let formHTML = '';
+                
+                switch(recordType) {
+                    case 'vaccination':
+                        formHTML = `
+                            <div class="form-group">
+                                <label for="vaccination-name">Vaccine Name</label>
+                                <input type="text" id="vaccination-name" placeholder="e.g., COVID-19 Vaccine">
+                            </div>
+                            <div class="form-group">
+                                <label for="vaccination-date">Date Received</label>
+                                <input type="date" id="vaccination-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="vaccination-next-due">Next Due Date (Optional)</label>
+                                <input type="date" id="vaccination-next-due">
+                            </div>
+                            <div class="form-group">
+                                <label for="vaccination-notes">Notes (Optional)</label>
+                                <textarea id="vaccination-notes" rows="3" placeholder="Any additional notes"></textarea>
+                            </div>
+                        `;
+                        break;
+                    case 'medication':
+                        formHTML = `
+                            <div class="form-group">
+                                <label for="medication-name">Medication Name</label>
+                                <input type="text" id="medication-name" placeholder="e.g., Ibuprofen">
+                            </div>
+                            <div class="form-group">
+                                <label for="medication-dosage">Dosage</label>
+                                <input type="text" id="medication-dosage" placeholder="e.g., 200mg">
+                            </div>
+                            <div class="form-group">
+                                <label for="medication-frequency">Frequency</label>
+                                <input type="text" id="medication-frequency" placeholder="e.g., Twice daily">
+                            </div>
+                            <div class="form-group">
+                                <label for="medication-purpose">Purpose (Optional)</label>
+                                <input type="text" id="medication-purpose" placeholder="e.g., Pain relief">
+                            </div>
+                        `;
+                        break;
+                    case 'allergy':
+                        formHTML = `
+                            <div class="form-group">
+                                <label for="allergy-name">Allergen</label>
+                                <input type="text" id="allergy-name" placeholder="e.g., Penicillin">
+                            </div>
+                            <div class="form-group">
+                                <label for="allergy-severity">Severity</label>
+                                <select id="allergy-severity">
+                                    <option value="mild">Mild</option>
+                                    <option value="moderate">Moderate</option>
+                                    <option value="severe">Severe</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="allergy-reaction">Reaction</label>
+                                <input type="text" id="allergy-reaction" placeholder="e.g., Rash, difficulty breathing">
+                            </div>
+                            <div class="form-group">
+                                <label for="allergy-notes">Notes (Optional)</label>
+                                <textarea id="allergy-notes" rows="3" placeholder="Any additional notes"></textarea>
+                            </div>
+                        `;
+                        break;
+                    case 'condition':
+                        formHTML = `
+                            <div class="form-group">
+                                <label for="condition-name">Condition Name</label>
+                                <input type="text" id="condition-name" placeholder="e.g., Diabetes">
+                            </div>
+                            <div class="form-group">
+                                <label for="condition-diagnosis-date">Diagnosis Date</label>
+                                <input type="date" id="condition-diagnosis-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="condition-status">Status</label>
+                                <select id="condition-status">
+                                    <option value="active">Active</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="chronic">Chronic</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="condition-notes">Notes (Optional)</label>
+                                <textarea id="condition-notes" rows="3" placeholder="Any additional notes"></textarea>
+                            </div>
+                        `;
+                        break;
+                }
+                
+                formContent.innerHTML = formHTML;
+                healthRecordModal.style.display = 'flex';
+            }
+            
+            // Save health record
+            document.getElementById('save-record').addEventListener('click', async () => {
+                const records = loadHealthRecords();
+                const newRecord = {
+                    id: Date.now().toString(),
+                    dateAdded: new Date().toISOString()
+                };
+                
+                switch(currentRecordType) {
+                    case 'vaccination':
+                        newRecord.name = document.getElementById('vaccination-name').value;
+                        newRecord.date = document.getElementById('vaccination-date').value;
+                        newRecord.nextDue = document.getElementById('vaccination-next-due').value;
+                        newRecord.notes = document.getElementById('vaccination-notes').value;
+                        records.vaccinations.push(newRecord);
+                        break;
+                    case 'medication':
+                        newRecord.name = document.getElementById('medication-name').value;
+                        newRecord.dosage = document.getElementById('medication-dosage').value;
+                        newRecord.frequency = document.getElementById('medication-frequency').value;
+                        newRecord.purpose = document.getElementById('medication-purpose').value;
+                        records.medications.push(newRecord);
+                        break;
+                    case 'allergy':
+                        newRecord.name = document.getElementById('allergy-name').value;
+                        newRecord.severity = document.getElementById('allergy-severity').value;
+                        newRecord.reaction = document.getElementById('allergy-reaction').value;
+                        newRecord.notes = document.getElementById('allergy-notes').value;
+                        records.allergies.push(newRecord);
+                        break;
+                    case 'condition':
+                        newRecord.name = document.getElementById('condition-name').value;
+                        newRecord.diagnosisDate = document.getElementById('condition-diagnosis-date').value;
+                        newRecord.status = document.getElementById('condition-status').value;
+                        newRecord.notes = document.getElementById('condition-notes').value;
+                        records.conditions.push(newRecord);
+                        break;
+                }
+                
+                if (await saveHealthRecords(records)) {
+                    alert('Record saved successfully!');
+                    healthRecordModal.style.display = 'none';
+                    displayHealthRecords(records);
+                } else {
+                    alert('Error saving record. Please try again.');
+                }
+            });
+            
+            // Delete health record
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.delete-record')) {
+                    const button = e.target.closest('.delete-record');
+                    const recordType = button.getAttribute('data-type');
+                    const recordId = button.getAttribute('data-id');
+                    
+                    if (confirm('Are you sure you want to delete this record?')) {
+                        const records = loadHealthRecords();
+                        records[recordType] = records[recordType].filter(record => record.id !== recordId);
+                        
+                        if (saveHealthRecords(records)) {
+                            alert('Record deleted successfully!');
+                            displayHealthRecords(records);
+                        } else {
+                            alert('Error deleting record. Please try again.');
+                        }
+                    }
+                }
+            });
+            
+            // Open save report modal
+            document.getElementById('save-report-btn').addEventListener('click', () => {
+                saveReportModal.style.display = 'flex';
+            });
+            
+            // Close modals
+            closeModalButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    userProfileModal.style.display = 'none';
+                    healthRecordModal.style.display = 'none';
+                    saveReportModal.style.display = 'none';
+                });
+            });
+            
+            // Save option selection
+            const saveOptions = document.querySelectorAll('.save-option');
+            
+            saveOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    saveOptions.forEach(o => o.classList.remove('active'));
+                    option.classList.add('active');
+                    selectedSaveMethod = option.getAttribute('data-method');
+                    document.getElementById('confirm-save').disabled = false;
+                });
+            });
+            
+            // Confirm save
+            document.getElementById('confirm-save').addEventListener('click', () => {
+                if (selectedSaveMethod) {
+                    saveHealthReport(selectedSaveMethod);
+                    saveReportModal.style.display = 'none';
+                }
+            });
+            
+            // ==================== CORRECTED EMAIL FUNCTIONS ====================
+
+           // Enhanced email function with complete data
+async function sendHealthReportEmail(email, assessmentData, userName = 'HealthNest User') {
+    try {
+        console.log('📧 Preparing email data for:', email);
+        
+        // Format symptoms
+        const symptomsText = assessmentData.symptoms && assessmentData.symptoms.length > 0 
+            ? assessmentData.symptoms.map(symptom => {
+                const symptomObj = medicalDatabase.symptoms.find(s => s.id === symptom);
+                return symptomObj ? symptomObj.name : symptom.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }).join(', ')
+            : 'No symptoms reported';
+
+        // Format conditions
+        let conditionsText = 'No specific conditions identified';
+        if (assessmentData.conditions && assessmentData.conditions.length > 0) {
+            conditionsText = assessmentData.conditions.slice(0, 3).map(condition => {
+                const matchPercent = Math.round(condition.matchScore * 100);
+                return `${condition.name} (${matchPercent}% match)`;
+            }).join('; ');
+        }
+
+        // Format recommendations
+        let recommendationsText = 'Monitor symptoms, stay hydrated, consult healthcare provider';
+        if (assessmentData.conditions && assessmentData.conditions.length > 0) {
+            const topCondition = assessmentData.conditions[0];
+            recommendationsText = topCondition.treatments.join('; ');
+        }
+
+        // Generate AI analysis text
+        let aiAnalysisText = "Based on your symptoms and profile, our analysis suggests the conditions mentioned above. Please consult with a healthcare professional for accurate diagnosis and treatment.";
+        if (assessmentData.conditions && assessmentData.conditions.length > 0) {
+            const topCondition = assessmentData.conditions[0];
+            aiAnalysisText = `${topCondition.description} Your symptoms ${topCondition.matchScore >= 0.7 ? 'strongly' : 'moderately'} match this condition.`;
+        }
+
+        const emailData = {
+            to_email: email,
+            user_name: userName,
+            assessment_date: new Date(assessmentData.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }),
+            generated_date: new Date().toLocaleDateString('en-US', {
+                year: 'numeric', 
+                month: 'long',
+                day: 'numeric'
+            }),
+            age: assessmentData.age || 'Not specified',
+            gender: assessmentData.gender ? assessmentData.gender.charAt(0).toUpperCase() + assessmentData.gender.slice(1) : 'Not specified',
+            duration: formatDuration(assessmentData.duration),
+            severity: assessmentData.severity ? assessmentData.severity.charAt(0).toUpperCase() + assessmentData.severity.slice(1) : 'Not specified',
+            description: assessmentData.description || 'No additional details provided',
+            report_id: 'HN-' + Date.now().toString().slice(-6),
+            symptoms_list: symptomsText,
+            conditions_list: conditionsText,
+            recommendations: recommendationsText,
+            ai_analysis: aiAnalysisText
+        };
+
+        console.log('📨 Email data prepared:', emailData);
+
+        const emailStatus = document.getElementById('email-status');
+        emailStatus.textContent = '📤 Sending health report...';
+        emailStatus.className = 'email-status email-success';
+        emailStatus.style.display = 'block';
+
+        const response = await emailjs.send(
+            EMAILJS_CONFIG.serviceId,
+            EMAILJS_CONFIG.templateId,
+            emailData
+        );
+
+        emailStatus.textContent = '✅ Health report sent successfully to ' + email + '!';
+        console.log('✅ Email sent successfully to:', email);
+        
+        // Update user email if different
+        if (currentUser && currentUser.email !== email) {
+            currentUser.email = email;
+            saveUserProfile(currentUser);
+        }
+        
+        return { success: true, response };
+
+    } catch (error) {
+        const emailStatus = document.getElementById('email-status');
+        emailStatus.textContent = '❌ Failed to send email: ' + (error.text || 'Please try again');
+        emailStatus.className = 'email-status email-error';
+        emailStatus.style.display = 'block';
+        console.error('❌ Email error:', error);
+        return { success: false, error };
+    }
+}
+ // Simple email function without HTML content
+            async function sendHealthReportEmail(email, assessmentData, userName = 'HealthNest User') {
+                try {
+                    console.log('📧 Preparing email data for:', email);
+                    
+                    // Format symptoms as simple text
+                    const symptomsText = assessmentData.symptoms && assessmentData.symptoms.length > 0 
+                        ? assessmentData.symptoms.map(symptom => {
+                            const symptomObj = medicalDatabase.symptoms.find(s => s.id === symptom);
+                            return symptomObj ? symptomObj.name : symptom.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        }).join(', ')
+                        : 'No symptoms reported';
+
+                    // Format conditions as simple text
+                    let conditionsText = 'No specific conditions identified';
+                    if (assessmentData.conditions && assessmentData.conditions.length > 0) {
+                        conditionsText = assessmentData.conditions.slice(0, 3).map(condition => {
+                            const matchPercent = Math.round(condition.matchScore * 100);
+                            return `${condition.name} (${matchPercent}% match)`;
+                        }).join('; ');
+                    }
+
+                    // Format recommendations as simple text
+                    let recommendationsText = 'Monitor symptoms, stay hydrated, consult healthcare provider';
+                    if (assessmentData.conditions && assessmentData.conditions.length > 0) {
+                        const topCondition = assessmentData.conditions[0];
+                        recommendationsText = topCondition.treatments.join('; ');
+                    }
+
+                    const emailData = {
+                        to_email: email,
+                        user_name: userName,
+                        assessment_date: new Date(assessmentData.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        }),
+                        generated_date: new Date().toLocaleDateString('en-US', {
+                            year: 'numeric', 
+                            month: 'long',
+                            day: 'numeric'
+                        }),
+                        age: assessmentData.age || 'Not specified',
+                        gender: assessmentData.gender ? assessmentData.gender.charAt(0).toUpperCase() + assessmentData.gender.slice(1) : 'Not specified',
+                        duration: formatDuration(assessmentData.duration),
+                        severity: assessmentData.severity ? assessmentData.severity.charAt(0).toUpperCase() + assessmentData.severity.slice(1) : 'Not specified',
+                        description: assessmentData.description || 'No additional details provided',
+                        report_id: 'HN-' + Date.now().toString().slice(-6),
+                        symptoms_list: symptomsText,
+                        conditions_list: conditionsText,
+                        recommendations: recommendationsText
+                    };
+
+                    console.log('📨 Email data prepared:', emailData);
+
+                    const emailStatus = document.getElementById('email-status');
+                    emailStatus.textContent = '📤 Sending health report...';
+                    emailStatus.className = 'email-status email-success';
+                    emailStatus.style.display = 'block';
+
+                    const response = await emailjs.send(
+                        EMAILJS_CONFIG.serviceId,
+                        EMAILJS_CONFIG.templateId,
+                        emailData
+                    );
+
+                    emailStatus.textContent = '✅ Health report sent successfully to ' + email + '!';
+                    console.log('✅ Email sent successfully to:', email);
+                    
+                    // Update user email if different
+                    if (currentUser && currentUser.email !== email) {
+                        currentUser.email = email;
+                        saveUserProfile(currentUser);
+                    }
+                    
+                    return { success: true, response };
+
+                } catch (error) {
+                    const emailStatus = document.getElementById('email-status');
+                    emailStatus.textContent = '❌ Failed to send email: ' + (error.text || 'Please try again');
+                    emailStatus.className = 'email-status email-error';
+                    emailStatus.style.display = 'block';
+                    console.error('❌ Email error:', error);
+                    return { success: false, error };
+                }
+            }
+
+            // Email sending function
+            function sendEmail() {
+                const emailInput = document.getElementById('email-address');
+                const email = emailInput.value.trim();
+                const emailStatus = document.getElementById('email-status');
+
+                // Validate email
+                if (!email || !email.includes('@')) {
+                    emailStatus.textContent = '❌ Please enter a valid email address';
+                    emailStatus.className = 'email-status email-error';
+                    emailStatus.style.display = 'block';
+                    return;
+                }
+
+                // Validate assessment data
+                if (!currentAssessment) {
+                    emailStatus.textContent = '❌ Please complete a symptom assessment first';
+                    emailStatus.className = 'email-status email-error';
+                    emailStatus.style.display = 'block';
+                    return;
+                }
+
+                console.log('🚀 Sending email to:', email);
+                
+                // Send the email to the user's entered email address
+                sendHealthReportEmail(email, currentAssessment, currentUser ? currentUser.name : 'HealthNest User');
+            }
+
+            // Email results function
+            function sendResultsEmail() {
+                const emailInput = document.getElementById('email-address');
+                const email = emailInput.value.trim();
+                
+                if (!email || !email.includes('@')) {
+                    const userEmail = prompt('Please enter your email address to receive the health report:');
+                    if (userEmail && userEmail.includes('@')) {
+                        sendHealthReportEmail(userEmail, currentAssessment, currentUser ? currentUser.name : 'HealthNest User');
+                    } else if (userEmail) {
+                        alert('Please enter a valid email address.');
+                    }
+                } else {
+                    sendHealthReportEmail(email, currentAssessment, currentUser ? currentUser.name : 'HealthNest User');
+                }
+            }
+
+            // Helper function to format duration
+            function formatDuration(duration) {
+                if (!duration) return 'Not specified';
+                const durationMap = {
+                    'less-than-day': 'Less than a day',
+                    '1-3-days': '1-3 days', 
+                    '4-7-days': '4-7 days',
+                    '1-2-weeks': '1-2 weeks',
+                    'more-than-2-weeks': 'More than 2 weeks'
+                };
+                return durationMap[duration] || duration;
+            }
+
+            // Event listeners
+            document.getElementById('send-email-btn').addEventListener('click', sendEmail);
+            document.getElementById('email-results-btn').addEventListener('click', sendResultsEmail);
+            
+            function isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+            
+            // Main app functionality
+            const symptomForm = document.getElementById('symptom-form');
+            const resultsSection = document.getElementById('results');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const backBtn = document.getElementById('back-btn');
+            const possibleConditions = document.getElementById('possible-conditions');
+            const recommendations = document.getElementById('recommendations');
+            const severityIndicator = document.getElementById('severity-indicator');
+            const aiAnalysisText = document.getElementById('ai-analysis-text');
+            const analyzingSpinner = document.getElementById('analyzing-spinner');
+            
+            analyzeBtn.addEventListener('click', function() {
+                // Validate all tabs before analyzing
+                if (!validateTab('basic') || !validateTab('symptoms')) {
+                    // If validation fails, go to the first tab with errors
+                    if (!validateTab('basic')) {
+                        document.querySelector('.tab[data-tab="basic"]').click();
+                    } else if (!validateTab('symptoms')) {
+                        document.querySelector('.tab[data-tab="symptoms"]').click();
+                    }
+                    return;
+                }
+                
+                // Show loading spinner
+                analyzingSpinner.style.display = 'block';
+                analyzeBtn.disabled = true;
+                
+                // Get selected symptoms
+                const selectedSymptoms = [];
+                document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                    selectedSymptoms.push(checkbox.value);
+                });
+                
+                // Get user data
+                const age = document.getElementById('age').value;
+                const gender = document.getElementById('gender').value;
+                const symptomDuration = document.getElementById('symptom-duration').value;
+                const symptomDescription = document.getElementById('symptom-description').value;
+                const activityLevel = document.getElementById('activity-level').value;
+                const sleep = document.getElementById('sleep').value;
+                const stress = document.getElementById('stress').value;
+                const diet = document.getElementById('diet').value;
+                
+                // Simulate analysis delay
+                setTimeout(() => {
+                    // Use enhanced symptom analysis
+                    const matchingConditions = analyzeSymptoms(selectedSymptoms, age, gender, symptomDuration, symptomDescription);
+                    
+                    // Determine highest severity
+                    let highestSeverity = 'low';
+                    if (matchingConditions.length > 0) {
+                        const conditionSeverities = matchingConditions.map(c => c.severity);
+                        if (conditionSeverities.includes('high')) {
+                            highestSeverity = 'high';
+                        } else if (conditionSeverities.includes('medium')) {
+                            highestSeverity = 'medium';
+                        }
+                    }
+                    
+                    // Store current assessment data
+                    currentAssessment = {
+                        date: new Date().toISOString(),
+                        age: age,
+                        gender: gender,
+                        symptoms: selectedSymptoms,
+                        duration: symptomDuration,
+                        severity: selectedSeverity,
+                        description: symptomDescription,
+                        activityLevel: activityLevel,
+                        sleep: sleep,
+                        stress: stress,
+                        diet: diet,
+                        conditions: matchingConditions,
+                        highestSeverity: highestSeverity
+                    };
+                    
+                    // Display results
+                    displayResults(matchingConditions, highestSeverity, age, gender, symptomDuration);
+                    
+                    // Hide loading spinner, show results
+                    analyzingSpinner.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                    
+                    // Show results section, hide form
+                    symptomForm.classList.add('hidden');
+                    resultsSection.classList.remove('hidden');
+                    
+                    // Update recent reports
+                    loadRecentReports();
+                }, 1500); // Simulate 1.5 second analysis time
+            });
+            
+            backBtn.addEventListener('click', function() {
+                // Show form, hide results
+                symptomForm.classList.remove('hidden');
+                resultsSection.classList.add('hidden');
+            });
+            
+            function displayResults(conditions, severity, age, gender, duration) {
+                // Clear previous results
+                possibleConditions.innerHTML = '';
+                recommendations.innerHTML = '';
+                
+                // Set severity indicator
+                severityIndicator.textContent = severity.charAt(0).toUpperCase() + severity.slice(1) + ' Severity';
+                severityIndicator.className = 'severity-indicator severity-' + severity;
+                
+                // Display possible conditions
+                if (conditions.length > 0) {
+                    // Show top 3 matches
+                    const topConditions = conditions.slice(0, 3);
+                    
+                    topConditions.forEach(condition => {
+                        const li = document.createElement('li');
+                        const matchPercent = Math.round(condition.matchScore * 100);
+                        li.innerHTML = `<i class="fas fa-notes-medical"></i> ${condition.name} <span style="color: var(--light-text); font-size: 14px;">(${matchPercent}% match)</span>`;
+                        possibleConditions.appendChild(li);
+                    });
+                    
+                    // Show recommendations from the top match
+                    const topCondition = topConditions[0];
+                    
+                    let recommendationHTML = `<p>Based on your symptoms, here's what we recommend:</p><ul>`;
+                    topCondition.treatments.forEach(treatment => {
+                        recommendationHTML += `<li>${treatment}</li>`;
+                    });
+                    recommendationHTML += `</ul>`;
+                    
+                    recommendations.innerHTML = recommendationHTML;
+                    
+                    // Set AI analysis text
+                    aiAnalysisText.textContent = generateAIAnalysis(topCondition, conditions, age, gender, duration);
+                } else {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<i class="fas fa-question-circle"></i> Unable to determine based on provided symptoms`;
+                    possibleConditions.appendChild(li);
+                    
+                    recommendations.innerHTML = `
+                        <p>Based on your symptoms, we recommend:</p>
+                        <ul>
+                            <li>Monitor your symptoms closely</li>
+                            <li>Stay hydrated and get plenty of rest</li>
+                            <li>Consult with a healthcare provider for proper diagnosis</li>
+                            <li>Keep a symptom diary to track patterns</li>
+                        </ul>
+                    `;
+                    
+                    aiAnalysisText.textContent = "Your symptoms don't clearly match common patterns in our database. This could be due to early stage illness, atypical presentation, or a combination of factors. Monitoring symptoms and consulting with a healthcare professional would be advisable for proper evaluation.";
+                }
+                
+                // Adjust analysis based on user demographics
+                if (age && age < 18) {
+                    aiAnalysisText.textContent += " Given your age, some conditions may present differently. Pediatric-specific considerations may apply.";
+                } else if (age && age > 65) {
+                    aiAnalysisText.textContent += " Given your age, be especially vigilant about symptoms worsening and don't hesitate to seek medical attention promptly.";
+                }
+            }
+            
+            // Generate AI analysis text
+            function generateAIAnalysis(topCondition, allConditions, age, gender, duration) {
+                let analysis = topCondition.description;
+                
+                // Add confidence level based on match score
+                if (topCondition.matchScore >= 0.8) {
+                    analysis += " Your symptoms strongly match this condition.";
+                } else if (topCondition.matchScore >= 0.6) {
+                    analysis += " Your symptoms moderately match this condition.";
+                } else {
+                    analysis += " Your symptoms partially match this condition.";
+                }
+                
+                // Add key symptoms information
+                if (topCondition.keySymptomsMatched > 0) {
+                    analysis += ` You're experiencing ${topCondition.keySymptomsMatched} of the key symptoms for this condition.`;
+                }
+                
+                // Add duration context
+                if (duration === 'less-than-day' || duration === '1-3-days') {
+                    analysis += " Since your symptoms are recent, this may be in the early stages.";
+                } else if (duration === 'more-than-2-weeks') {
+                    analysis += " Since your symptoms have persisted for more than two weeks, follow-up with a healthcare provider is recommended.";
+                }
+                
+                // Mention other possible conditions if applicable
+                if (allConditions.length > 1) {
+                    const otherConditions = allConditions.slice(1, 3).map(c => c.name).join(' and ');
+                    analysis += ` Other possibilities include ${otherConditions}, though these are less likely based on your symptoms.`;
+                }
+                
+                return analysis;
+            }
+            
+            // Health report storage functions
+            function saveHealthReport(method) {
+                if (!currentAssessment) return;
+                
+                switch(method) {
+                    case 'local':
+                        saveToFirestore();
+                        break;
+                    case 'download':
+                        downloadAsPDF();
+                        break;
+                }
+            }
+            
+            function downloadAsPDF() {
+                // In a real app, this would generate a PDF
+                // For this demo, we'll create a simple text file
+                const reportText = generateReportText();
+                const blob = new Blob([reportText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `health-report-${new Date().toISOString().split('T')[0]}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('Health report downloaded as text file!');
+            }
+            
+            function generateReportText() {
+                let text = 'HEALTHNEST HEALTH REPORT\n';
+                text += '===================\n\n';
+                text += `Assessment Date: ${new Date(currentAssessment.date).toLocaleDateString()}\n`;
+                text += `Age: ${currentAssessment.age || 'Not specified'}\n`;
+                text += `Gender: ${currentAssessment.gender || 'Not specified'}\n`;
+                text += `Symptoms: ${currentAssessment.symptoms.join(', ')}\n`;
+                text += `Symptom Duration: ${currentAssessment.duration || 'Not specified'}\n`;
+                text += `Severity: ${currentAssessment.severity || 'Not specified'}\n\n`;
+                
+                text += 'POSSIBLE CONDITIONS:\n';
+                text += '-------------------\n';
+                if (currentAssessment.conditions.length > 0) {
+                    currentAssessment.conditions.slice(0, 3).forEach(condition => {
+                        text += `- ${condition.name} (${Math.round(condition.matchScore * 100)}% match)\n`;
+                    });
+                } else {
+                    text += 'No specific conditions identified based on provided symptoms.\n';
+                }
+                
+                text += '\nRECOMMENDATIONS:\n';
+                text += '---------------\n';
+                if (currentAssessment.conditions.length > 0) {
+                    currentAssessment.conditions[0].treatments.forEach(treatment => {
+                        text += `- ${treatment}\n`;
+                    });
+                } else {
+                    text += '- Monitor your symptoms closely\n';
+                    text += '- Stay hydrated and get plenty of rest\n';
+                    text += '- Consult with a healthcare provider for proper diagnosis\n';
+                    text += '- Keep a symptom diary to track patterns\n';
+                }
+                
+                text += '\nIMPORTANT:\n';
+                text += '---------\n';
+                text += 'This report is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.\n\n';
+                
+                text += `Report generated on: ${new Date().toLocaleDateString()}`;
+                
+                return text;
+            }
+            
+            // ==================== INITIALIZATION ====================
+            
+            // Initialize the app
+            loadUserProfile();
+            populateSymptoms();
+            displayHealthRecords(loadHealthRecords()); // Initialize with localStorage data
+            displayDatabaseContent('conditions');
+            loadRecentReports();
+            updateProgressBar();
+            
+            // Note: Firestore data loading happens automatically via auth state change
+            
+        }); // End of DOMContentLoaded
+    </script>
+</body>
+</html>
